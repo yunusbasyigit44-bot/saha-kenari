@@ -68,7 +68,10 @@
   .marka h1 { font-size: 40px; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; }
   .marka h1 span { color: var(--vurgu); }
   .marka p { margin: 0; opacity: 0.8; font-size: 14px; }
-  .sekmeler { display: flex; gap: 4px; margin-top: 16px; }
+  /* Sekmeler ekrana sığmazsa yana kayar (telefonda) */
+  .sekmeler { display: flex; gap: 4px; margin-top: 16px; overflow-x: auto; scrollbar-width: none; }
+  .sekmeler::-webkit-scrollbar { display: none; }
+  .sekmeler a { white-space: nowrap; flex: none; }
   .sekmeler a {
     font-family: var(--font-baslik); font-size: 18px; font-weight: 700; letter-spacing: 0.04em;
     text-transform: uppercase; text-decoration: none; color: var(--saha-yazi); opacity: 0.7;
@@ -176,9 +179,32 @@
   .renk-kutu { display: inline-block; width: 28px; height: 20px; border-radius: 4px; border: 1px solid var(--cizgi); vertical-align: middle; }
   .ulke-liste { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 
+  /* ---------- SERİ YAKALA ---------- */
+  .soru { font-family: var(--font-baslik); font-size: 26px; font-weight: 700; text-align: center; margin: 4px 0 14px; text-wrap: balance; }
+  .ikili { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+  .oyuncu-kart {
+    font: inherit; color: var(--yazi); text-align: center; cursor: pointer;
+    background: var(--kart); border: 2px solid var(--cizgi); border-radius: 10px;
+    padding: 14px 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0;
+  }
+  .oyuncu-kart:hover:not(:disabled) { border-color: var(--saha); }
+  .oyuncu-kart:disabled { cursor: default; opacity: 1; }
+  .oyuncu-kart .logo { width: 40px; height: 40px; }
+  .oyuncu-kart .ad { font-weight: 700; font-size: 17px; overflow-wrap: anywhere; }
+  .oyuncu-kart .bilgi { font-size: 13px; color: var(--soluk); overflow-wrap: anywhere; }
+  .oyuncu-kart .deger { font-family: var(--font-baslik); font-size: 40px; font-weight: 800; line-height: 1; min-height: 40px; font-variant-numeric: tabular-nums; }
+  .oyuncu-kart.dogru { border-color: var(--dogru); }
+  .oyuncu-kart.yanlis { border-color: var(--yanlis); }
+  .seri-sayac { text-align: center; font-size: 14px; color: var(--soluk); }
+  .seri-sayac b { font-family: var(--font-baslik); font-size: 28px; color: var(--yazi); }
+  @media (prefers-reduced-motion: no-preference) {
+    .oyuncu-kart { transition: border-color 0.2s; }
+  }
+
   @media (max-width: 520px) {
     .marka h1 { font-size: 32px; }
-    .sekmeler a { font-size: 15px; padding: 8px 10px; }
+    .sekmeler { gap: 2px; }
+    .sekmeler a { font-size: 14px; padding: 8px 8px; letter-spacing: 0.02em; }
     .takim-baslik h3 { font-size: 24px; }
     .satir { grid-template-columns: minmax(0, 110px) minmax(0, 1fr) 26px; }
   }
@@ -197,6 +223,7 @@
       <a href="#istatistik" id="sekmeIstatistik">İstatistikler</a>
       <a href="#oyun" id="sekmeOyun">İpucu Avı</a>
       <a href="#gizli" id="sekmeGizli">Gizli Takım</a>
+      <a href="#seri" id="sekmeSeri">Seri Yakala</a>
     </nav>
   </div>
 </div>
@@ -348,6 +375,43 @@
       <button id="gtTekrarBtn">Tekrar Oyna</button>
     </div>
   </section>
+
+  <!-- ===================== SERİ YAKALA ===================== -->
+  <section id="bolumSeri" class="oyun" hidden>
+    <div id="syBaslangic" class="kart">
+      <h2 style="margin-top: 0;">Seri Yakala</h2>
+      <ol class="kurallar">
+        <li>Ekrana iki oyuncu gelir ve bir soru: "Hangisi bu sezon daha çok gol attı?" gibi.</li>
+        <li>Doğru oyuncuya tıkla, serin bir artar. Soru her seferinde değişir: gol, asist, şut, maç, yaş, sarı kart.</li>
+        <li>Serin uzadıkça sorular zorlaşır: sayılar birbirine yaklaşır.</li>
+        <li>Tek yanlışta oyun biter. Süre yok, acele etme.</li>
+      </ol>
+      <div class="secimler">
+        <label>Lig <select id="syLigSec"></select></label>
+        <button id="syBaslatBtn">Oyuna Başla</button>
+      </div>
+      <p class="ipucu-yazi" id="syRekorYazi"></p>
+    </div>
+
+    <div id="syOyun" class="kart" hidden>
+      <div class="seri-sayac">Seri <b id="sySeriYazi">0</b></div>
+      <div class="soru" id="sySoru"></div>
+      <div class="ikili">
+        <button class="oyuncu-kart" id="syKart0"></button>
+        <button class="oyuncu-kart" id="syKart1"></button>
+      </div>
+      <div id="syMesaj" class="mesaj" style="text-align: center;"></div>
+      <div style="text-align: center;"><button id="sySonrakiBtn" hidden>Sıradaki</button></div>
+    </div>
+
+    <div id="sySonuc" class="kart sonuc" hidden>
+      <div>Serin</div>
+      <div class="buyuk" id="syToplam">0</div>
+      <div id="syRekorMesaj"></div>
+      <p class="ipucu-yazi" id="syYakalayan"></p>
+      <button id="syTekrarBtn">Tekrar Oyna</button>
+    </div>
+  </section>
 </main>
 
 <script>
@@ -388,6 +452,7 @@
     { sekme: "sekmeIstatistik", bolum: "bolumIstatistik", hash: "#istatistik" },
     { sekme: "sekmeOyun",       bolum: "bolumOyun",       hash: "#oyun" },
     { sekme: "sekmeGizli",      bolum: "bolumGizli",      hash: "#gizli" },
+    { sekme: "sekmeSeri",       bolum: "bolumSeri",       hash: "#seri" },
   ];
   function sekmeGoster() {
     // Adreste tanıdık bir sekme yoksa İstatistikler açılır
@@ -846,6 +911,141 @@
   $("gtSonrakiBtn").addEventListener("click", () => gt.tur < TUR_SAYISI ? gtYeniTur() : gtOyunuBitir());
 
   // ============================================================
+  // SERİ YAKALA
+  // İki oyuncu, bir soru. Doğru bildikçe seri uzar, tek yanlışta biter.
+  // ============================================================
+  const SY_SORULAR = [
+    { alan: "g",   soru: "Hangisi bu sezon daha çok gol attı?",      birim: "gol",   kaleciYok: true },
+    { alan: "a",   soru: "Hangisi bu sezon daha çok asist yaptı?",   birim: "asist", kaleciYok: true },
+    { alan: "s",   soru: "Hangisi bu sezon daha çok şut çekti?",     birim: "şut",   kaleciYok: true },
+    { alan: "mac", soru: "Hangisi bu sezon daha çok maça çıktı?",    birim: "maç" },
+    { alan: "y",   soru: "Hangisi daha yaşlı?",                      birim: "yaş" },
+    { alan: "sk",  soru: "Hangisi bu sezon daha çok sarı kart gördü?", birim: "sarı kart" },
+  ];
+  const sy = { havuz: [], seri: 0, soru: null, ikili: [], sorulanlar: new Set() };
+
+  function syEkrani(ad) {
+    for (const e of ["syBaslangic", "syOyun", "sySonuc"]) $(e).hidden = e !== ad;
+  }
+  const syRekorAnahtari = () => "syRekor_" + $("syLigSec").value;
+  const syRekoruOku = () => Number(hafizaOku(syRekorAnahtari(), 0)) || 0;
+  function syBaslangicYazilari() {
+    const r = syRekoruOku();
+    $("syRekorYazi").textContent = r ? `Bu ligdeki en uzun serin: ${r}` : "";
+  }
+
+  // Seri uzadıkça iki sayı arasındaki fark küçülsün (zorlaşsın)
+  // fark oranı = (büyük - küçük) / büyük
+  function syEnAzFarkOrani() {
+    if (sy.seri < 3) return 0.5;
+    if (sy.seri < 7) return 0.25;
+    if (sy.seri < 12) return 0.1;
+    return 0;
+  }
+
+  // Soruya uygun iki oyuncu bul (eşit olmasınlar, yeterince fark olsun)
+  function syIkiliSec() {
+    for (let deneme = 0; deneme < 400; deneme++) {
+      const soru = SY_SORULAR[Math.floor(Math.random() * SY_SORULAR.length)];
+      const uygun = soru.kaleciYok ? sy.havuz.filter(o => o.p !== "G") : sy.havuz;
+      const a = uygun[Math.floor(Math.random() * uygun.length)];
+      const b = uygun[Math.floor(Math.random() * uygun.length)];
+      if (!a || !b || a === b) continue;
+      const x = a[soru.alan] ?? 0, y = b[soru.alan] ?? 0;
+      if (x === y || Math.max(x, y) === 0) continue;
+      if (soru.alan === "y" && (!a.y || !b.y)) continue;
+      const anahtar = [a.i, b.i, soru.alan].sort().join("|");
+      if (sy.sorulanlar.has(anahtar)) continue;
+      // İlk denemelerde fark kuralına uy, bulunamazsa kuralı gevşet
+      const oran = (Math.max(x, y) - Math.min(x, y)) / Math.max(x, y);
+      if (deneme < 300 && oran < syEnAzFarkOrani()) continue;
+      sy.sorulanlar.add(anahtar);
+      return { soru, ikili: [a, b] };
+    }
+    return null;
+  }
+
+  function syKartCiz(i, degerGoster) {
+    const o = sy.ikili[i], takim = VERI.takimlar[o.t];
+    const ligAdi = $("syLigSec").value === "hepsi" ? ` · ${ligBul(takim.lig).ad}` : "";
+    $("syKart" + i).innerHTML = `
+      <img class="logo" src="${logoUrl(o.t)}" alt="">
+      <div class="ad">${o.i}</div>
+      <div class="bilgi">${o.uk ? `<img class="bayrak" src="${bayrakUrl(o.uk)}" alt=""> ` : ""}${mevki(o)} · ${takim.ad}${ligAdi}</div>
+      <div class="deger">${degerGoster ? (o[sy.soru.alan] ?? 0) : "?"}</div>`;
+  }
+
+  function syYeniSoru() {
+    const secim = syIkiliSec();
+    if (!secim) { syOyunuBitir("Sorulacak yeni ikili kalmadı, tebrikler!"); return; }
+    sy.soru = secim.soru; sy.ikili = secim.ikili;
+    $("sySeriYazi").textContent = sy.seri;
+    $("sySoru").textContent = sy.soru.soru;
+    $("syMesaj").textContent = ""; $("syMesaj").className = "mesaj";
+    $("sySonrakiBtn").hidden = true;
+    for (const i of [0, 1]) {
+      $("syKart" + i).className = "oyuncu-kart";
+      $("syKart" + i).disabled = false;
+      syKartCiz(i, false);
+    }
+  }
+
+  function syCevapla(secilen) {
+    const alan = sy.soru.alan;
+    const dogruIndex = (sy.ikili[0][alan] ?? 0) > (sy.ikili[1][alan] ?? 0) ? 0 : 1;
+    for (const i of [0, 1]) {
+      $("syKart" + i).disabled = true;
+      syKartCiz(i, true);
+    }
+    $("syKart" + dogruIndex).classList.add("dogru");
+    const k = sy.ikili[dogruIndex], d = sy.ikili[1 - dogruIndex];
+    const aciklama = `${k.i}: ${k[alan]} ${sy.soru.birim}, ${d.i}: ${d[alan] ?? 0} ${sy.soru.birim}`;
+    if (secilen === dogruIndex) {
+      sy.seri++;
+      $("sySeriYazi").textContent = sy.seri;
+      $("syMesaj").textContent = "Doğru!"; $("syMesaj").className = "mesaj dogru";
+      $("sySonrakiBtn").hidden = false;
+      $("sySonrakiBtn").focus();
+    } else {
+      $("syKart" + secilen).classList.add("yanlis");
+      $("syMesaj").textContent = "Yanlış!"; $("syMesaj").className = "mesaj yanlis";
+      sy.yakalayan = `${sy.soru.soru} ${aciklama}`;
+      $("sySonrakiBtn").textContent = "Sonucu Gör";
+      $("sySonrakiBtn").hidden = false;
+      $("sySonrakiBtn").focus();
+    }
+  }
+
+  function syOyunuBitir(not) {
+    syEkrani("sySonuc");
+    $("syToplam").textContent = sy.seri;
+    const rekor = syRekoruOku();
+    if (sy.seri > rekor) { hafizaYaz(syRekorAnahtari(), sy.seri); $("syRekorMesaj").textContent = "Yeni rekor!"; }
+    else $("syRekorMesaj").textContent = `Bu ligdeki en uzun serin: ${rekor}`;
+    $("syYakalayan").textContent = not || (sy.yakalayan ? `Seni yakalayan soru: ${sy.yakalayan}` : "");
+  }
+
+  function syOyunaBasla() {
+    const secim = $("syLigSec").value;
+    const ligler = secim === "hepsi" ? VERI.ligler : [ligBul(secim)];
+    sy.havuz = ligler.flatMap(l => l.oyuncular).filter(o => o.mac >= EN_AZ_MAC);
+    sy.seri = 0; sy.sorulanlar = new Set(); sy.yakalayan = "";
+    $("sySonrakiBtn").textContent = "Sıradaki";
+    syEkrani("syOyun");
+    syYeniSoru();
+  }
+
+  $("syLigSec").addEventListener("change", syBaslangicYazilari);
+  $("syBaslatBtn").addEventListener("click", syOyunaBasla);
+  $("syTekrarBtn").addEventListener("click", () => { syEkrani("syBaslangic"); syBaslangicYazilari(); });
+  $("syKart0").addEventListener("click", () => syCevapla(0));
+  $("syKart1").addEventListener("click", () => syCevapla(1));
+  $("sySonrakiBtn").addEventListener("click", () => {
+    if ($("syMesaj").classList.contains("yanlis")) syOyunuBitir();
+    else syYeniSoru();
+  });
+
+  // ============================================================
   // AÇILIŞ: verileri yükle
   // ============================================================
   sekmeGoster();
@@ -856,11 +1056,13 @@
       $("ligSec").innerHTML = ligSecenekleri;
       $("oyunLigSec").innerHTML = ligSecenekleri;
       $("gtLigSec").innerHTML = ligSecenekleri;
+      $("syLigSec").innerHTML = `<option value="hepsi">🌍 Karışık (10 lig)</option>` + ligSecenekleri;
       const tarih = new Date(VERI.guncelleme).toLocaleString("tr-TR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
       $("guncelleme").textContent = `Son güncelleme: ${tarih} · Veri kaynağı: ESPN · Her gün otomatik güncellenir`;
       ligDegisti();
       baslangicYazilari();
       gtBaslangicYazilari();
+      syBaslangicYazilari();
     } catch (e) {
       $("guncelleme").textContent = "";
       $("hata").hidden = false;

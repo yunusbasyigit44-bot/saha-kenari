@@ -222,6 +222,15 @@
   .gb-istatistik span { font-size: 12px; color: var(--soluk); }
   .gb-tahminler { list-style: none; padding: 0; margin: 10px 0 0; font-size: 14px; color: var(--soluk); }
 
+  /* ---------- LİDERLİK ---------- */
+  .skor-formu { margin: 16px auto 0; max-width: 420px; padding-top: 14px; border-top: 1px solid var(--cizgi); text-align: center; }
+  .skor-formu .satir-form { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+  .skor-formu input { flex: 1 1 180px; }
+  .lider-tablo td:first-child { width: 48px; }
+  .lider-tablo tr.ben td { background: var(--secili); font-weight: 700; }
+  .madalya { font-size: 18px; }
+  .lider-bos { padding: 24px 14px; text-align: center; color: var(--soluk); }
+
   @media (max-width: 520px) {
     .marka h1 { font-size: 32px; }
     .sekmeler { gap: 2px; }
@@ -246,6 +255,7 @@
       <a href="#gizli" id="sekmeGizli">Gizli Takım</a>
       <a href="#seri" id="sekmeSeri">Seri Yakala</a>
       <a href="#gunluk" id="sekmeGunluk">Günün Bulmacası</a>
+      <a href="#liderlik" id="sekmeLiderlik">Liderlik</a>
     </nav>
   </div>
 </div>
@@ -353,6 +363,7 @@
       <div id="rekorMesaj"></div>
       <ol class="gecmis" id="gecmis"></ol>
       <button id="tekrarBtn">Tekrar Oyna</button>
+      <div class="skor-formu" id="ipSkor"></div>
     </div>
   </section>
 
@@ -395,6 +406,7 @@
       <div id="gtRekorMesaj"></div>
       <ol class="gecmis" id="gtGecmis"></ol>
       <button id="gtTekrarBtn">Tekrar Oyna</button>
+      <div class="skor-formu" id="gtSkor"></div>
     </div>
   </section>
 
@@ -432,6 +444,7 @@
       <div id="syRekorMesaj"></div>
       <p class="ipucu-yazi" id="syYakalayan"></p>
       <button id="syTekrarBtn">Tekrar Oyna</button>
+      <div class="skor-formu" id="sySkor"></div>
     </div>
   </section>
 
@@ -466,6 +479,7 @@
           <a id="gbWhatsapp" class="dugme ikincil" target="_blank" rel="noopener">WhatsApp'ta Paylaş</a>
         </div>
         <p class="ipucu-yazi" id="gbGeriSayim"></p>
+        <div class="skor-formu" id="gbSkor"></div>
       </div>
 
       <div class="gb-istatistik">
@@ -475,6 +489,42 @@
         <div><b id="gbEnIyi">0</b><span>En iyi seri</span></div>
       </div>
     </div>
+  </section>
+
+  <!-- ===================== LİDERLİK ===================== -->
+  <section id="bolumLiderlik" hidden>
+    <div class="secimler">
+      <label>Oyun
+        <select id="ldOyun">
+          <option value="ipucu">İpucu Avı</option>
+          <option value="gizli">Gizli Takım</option>
+          <option value="seri">Seri Yakala</option>
+          <option value="gunluk">Günün Bulmacası (bugün)</option>
+        </select>
+      </label>
+      <label id="ldLigEtiket">Lig <select id="ldLig"></select></label>
+      <label id="ldSeviyeEtiket">Seviye
+        <select id="ldSeviye">
+          <option value="kolay">Kolay</option>
+          <option value="orta">Orta</option>
+          <option value="zor">Zor</option>
+        </select>
+      </label>
+      <label id="ldDonemEtiket">Dönem
+        <select id="ldDonem">
+          <option value="7">Son 7 gün</option>
+          <option value="tum">Tüm zamanlar</option>
+        </select>
+      </label>
+    </div>
+    <h2 id="ldBaslik">Liderlik Tablosu</h2>
+    <div class="kart tablo-kap">
+      <table class="lider-tablo">
+        <thead><tr><th class="sayi">#</th><th>Takma ad</th><th class="sayi" id="ldPuanBaslik">Puan</th><th class="sayi">Tarih</th></tr></thead>
+        <tbody id="ldTablo"></tbody>
+      </table>
+    </div>
+    <p class="ipucu-yazi">Her oyuncunun en iyi skoru gösterilir. Senin skorların sarı renkle işaretli. Oyun bitince sonuç ekranından skorunu ekleyebilirsin.</p>
   </section>
 </main>
 
@@ -518,6 +568,7 @@
     { sekme: "sekmeGizli",      bolum: "bolumGizli",      hash: "#gizli" },
     { sekme: "sekmeSeri",       bolum: "bolumSeri",       hash: "#seri" },
     { sekme: "sekmeGunluk",     bolum: "bolumGunluk",     hash: "#gunluk" },
+    { sekme: "sekmeLiderlik",   bolum: "bolumLiderlik",   hash: "#liderlik" },
   ];
   function sekmeGoster() {
     // Adreste tanıdık bir sekme yoksa İstatistikler açılır
@@ -529,6 +580,8 @@
     // Telefonda sekmeler yana kayıyor: açık olan sekme hep görünsün
     const bar = document.querySelector(".sekmeler"), a = $(aktif.sekme);
     bar.scrollLeft = Math.max(0, a.offsetLeft - bar.offsetLeft - (bar.clientWidth - a.offsetWidth) / 2);
+    // Liderlik sekmesi her açıldığında tabloyu tazele
+    if (aktif.hash === "#liderlik" && VERI) ldYukle();
   }
   for (const { sekme: id, hash } of SEKMELER) {
     $(id).addEventListener("click", e => {
@@ -790,6 +843,7 @@
     else $("rekorMesaj").textContent = `Bu lig ve seviyedeki rekorun: ${rekor}`;
     $("gecmis").innerHTML = gecmis.map(g =>
       `<li>${g.i} <span style="color:var(--soluk)">(${g.takim})</span>: <b>${g.kazanilan}</b></li>`).join("");
+    skorFormuKur("ipSkor", { oyun: "ipucu", lig: $("oyunLigSec").value, seviye: $("seviyeSec").value, puan });
   }
 
   function oyunaBasla() {
@@ -958,6 +1012,7 @@
     else $("gtRekorMesaj").textContent = `Bu ligdeki rekorun: ${rekor}`;
     $("gtGecmis").innerHTML = gt.gecmis.map(g =>
       `<li><img class="logo" src="${logoUrl(g.id)}" alt=""> ${VERI.takimlar[g.id].ad}: <b>${g.kazanilan}</b></li>`).join("");
+    skorFormuKur("gtSkor", { oyun: "gizli", lig: gt.lig, puan: gt.puan });
   }
 
   function gtOyunaBasla() {
@@ -1091,6 +1146,8 @@
     if (sy.seri > rekor) { hafizaYaz(syRekorAnahtari(), sy.seri); $("syRekorMesaj").textContent = "Yeni rekor!"; }
     else $("syRekorMesaj").textContent = `Bu ligdeki en uzun serin: ${rekor}`;
     $("syYakalayan").textContent = not || (sy.yakalayan ? `Seni yakalayan soru: ${sy.yakalayan}` : "");
+    if (sy.seri > 0) skorFormuKur("sySkor", { oyun: "seri", lig: $("syLigSec").value, puan: sy.seri });
+    else $("sySkor").innerHTML = "";
   }
 
   function syOyunaBasla() {
@@ -1225,6 +1282,13 @@
       $("gbPaylasMetin").value = metin;
       $("gbWhatsapp").href = "https://wa.me/?text=" + encodeURIComponent(metin);
       gbGeriSayim();
+      // Bilenler bugünün tablosuna girebilir (bir kez)
+      if (gbDurum.kazandi && !gbDurum.gonderildi) {
+        skorFormuKur("gbSkor", { oyun: "gunluk", lig: "hepsi", puan: gbDurum.tahminler.length, gun: gbDurum.tarih });
+      } else {
+        $("gbSkor").innerHTML = gbDurum.gonderildi
+          ? `<a href="#liderlik" onclick="ldFiltreAyarla({oyun:'gunluk'})">Bugünün tablosunu gör</a>` : "";
+      }
     }
     const s = gbIstatistikOku();
     $("gbOynanan").textContent = s.oynanan;
@@ -1282,6 +1346,159 @@
   setInterval(gbGeriSayim, 30000);
 
   // ============================================================
+  // LİDERLİK TABLOSU
+  // Skorlar Supabase'deki "skorlar" tablosunda duruyor.
+  // Bu anahtar herkese açık olacak şekilde tasarlandı; güvenliği
+  // veritabanındaki kurallar sağlıyor (bkz. supabase_kurulum.sql).
+  // ============================================================
+  const SUPABASE_URL = "https://xsskbnvpsjsuvjovehxc.supabase.co";
+  const SUPABASE_ANAHTAR = "sb_publishable_vhq-lCqjhd4418JJmDI_4w_4CqfHv-X";
+  const SKOR_API = SUPABASE_URL + "/rest/v1/skorlar";
+  const OYUN_ADLARI = { ipucu: "İpucu Avı", gizli: "Gizli Takım", seri: "Seri Yakala", gunluk: "Günün Bulmacası" };
+
+  // Kullanıcıların yazdığı takma adlar sayfaya HTML olarak girmesin diye
+  const guvenli = yazi => String(yazi).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
+  // Her cihazın rastgele, kalıcı bir kimliği var (isim, e-posta yok)
+  function cihazKimligi() {
+    let id = hafizaOku("cihaz", "");
+    if (!/^[0-9a-f-]{36}$/.test(id)) {
+      id = crypto.randomUUID ? crypto.randomUUID()
+        : "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+      hafizaYaz("cihaz", id);
+    }
+    return id;
+  }
+
+  async function skorGonder(kayit) {
+    const cevap = await fetch(SKOR_API, {
+      method: "POST",
+      headers: { apikey: SUPABASE_ANAHTAR, "Content-Type": "application/json", Prefer: "return=minimal" },
+      body: JSON.stringify({ ...kayit, cihaz: cihazKimligi() }),
+    });
+    if (cevap.ok) return "tamam";
+    const metin = await cevap.text();
+    if (cevap.status === 409 || metin.includes("duplicate")) return "zaten";
+    if (metin.includes("hizli")) return "hizli";
+    return "hata";
+  }
+
+  // Sonuç ekranlarına "Skorunu tabloya ekle" formu koyar
+  function skorFormuKur(kapId, kayit) {
+    const kap = $(kapId);
+    kap.innerHTML = `
+      <div class="ipucu-yazi" style="margin:0">Skorunu liderlik tablosuna ekle</div>
+      <div class="satir-form">
+        <input id="${kapId}Ad" maxlength="20" placeholder="Takma adın (2-20 harf)" value="${guvenli(hafizaOku("takmaAd", ""))}" autocomplete="nickname">
+        <button id="${kapId}Btn">Ekle</button>
+      </div>
+      <div class="mesaj" id="${kapId}Mesaj"></div>`;
+    const gonder = async () => {
+      const ad = $(kapId + "Ad").value.trim();
+      const mesaj = $(kapId + "Mesaj");
+      if (ad.length < 2) { mesaj.textContent = "Takma ad en az 2 harf olmalı."; mesaj.className = "mesaj yanlis"; return; }
+      hafizaYaz("takmaAd", ad);
+      $(kapId + "Btn").disabled = true;
+      mesaj.textContent = "Gönderiliyor…"; mesaj.className = "mesaj";
+      let sonuc;
+      try { sonuc = await skorGonder({ ...kayit, takma_ad: ad }); } catch (e) { sonuc = "hata"; }
+      if (sonuc === "tamam" || sonuc === "zaten") {
+        if (kayit.oyun === "gunluk") { gbDurum.gonderildi = true; gbDurumYaz(); }
+        mesaj.innerHTML = (sonuc === "tamam" ? "Eklendi! " : "Bugünün sonucunu zaten eklemişsin. ")
+          + `<a href="#liderlik" id="${kapId}Git">Tabloyu gör</a>`;
+        mesaj.className = "mesaj dogru";
+        $(kapId + "Git").addEventListener("click", () => ldFiltreAyarla(kayit));
+        kap.querySelector(".satir-form").hidden = true;
+      } else {
+        mesaj.textContent = sonuc === "hizli" ? "Çok hızlı gönderdin, birkaç saniye bekleyip tekrar dene."
+          : "Gönderilemedi. İnternet bağlantını kontrol edip tekrar dene.";
+        mesaj.className = "mesaj yanlis";
+        $(kapId + "Btn").disabled = false;
+      }
+    };
+    $(kapId + "Btn").addEventListener("click", gonder);
+    $(kapId + "Ad").addEventListener("keydown", e => { if (e.key === "Enter") gonder(); });
+  }
+
+  // "Tabloyu gör"e basınca o oyunun tablosu açılsın
+  function ldFiltreAyarla(kayit) {
+    $("ldOyun").value = kayit.oyun;
+    if (kayit.lig && kayit.oyun !== "gunluk") $("ldLig").value = kayit.lig;
+    if (kayit.seviye) $("ldSeviye").value = kayit.seviye;
+  }
+
+  function ldGorunum() {
+    const oyun = $("ldOyun").value;
+    $("ldLigEtiket").hidden = oyun === "gunluk";
+    $("ldSeviyeEtiket").hidden = oyun !== "ipucu";
+    $("ldDonemEtiket").hidden = oyun === "gunluk";
+    // "Karışık" seçeneği sadece Seri Yakala'da var
+    const karisik = $("ldLig").querySelector('option[value="hepsi"]');
+    if (oyun === "seri" && !karisik) $("ldLig").insertAdjacentHTML("afterbegin", `<option value="hepsi">🌍 Karışık (10 lig)</option>`);
+    if (oyun !== "seri" && karisik) {
+      const secili = $("ldLig").value;
+      karisik.remove();
+      if (secili === "hepsi") $("ldLig").value = "tur.1";
+    }
+    $("ldPuanBaslik").textContent = oyun === "seri" ? "Seri" : oyun === "gunluk" ? "Tahmin" : "Puan";
+  }
+
+  let ldIstekNo = 0;
+  async function ldYukle() {
+    ldGorunum();
+    const oyun = $("ldOyun").value;
+    const p = new URLSearchParams({ select: "takma_ad,puan,olusturma,cihaz", oyun: "eq." + oyun, limit: "1000" });
+    if (oyun === "gunluk") {
+      p.set("gun", "eq." + gbBugun());
+      p.set("order", "puan.asc,olusturma.asc");
+    } else {
+      p.set("lig", "eq." + $("ldLig").value);
+      if (oyun === "ipucu") p.set("seviye", "eq." + $("ldSeviye").value);
+      if ($("ldDonem").value === "7") p.set("olusturma", "gte." + new Date(Date.now() - 7 * 86400000).toISOString());
+      p.set("order", "puan.desc,olusturma.asc");
+    }
+    const ligAdi = oyun === "gunluk" ? `#${gbNumara(gbBugun())}` : ($("ldLig").selectedOptions[0]?.textContent || "");
+    $("ldBaslik").textContent = `${OYUN_ADLARI[oyun]} · ${ligAdi}`;
+    $("ldTablo").innerHTML = `<tr><td colspan="4" class="lider-bos">Yükleniyor…</td></tr>`;
+    const no = ++ldIstekNo;
+    let satirlar;
+    try {
+      const cevap = await fetch(SKOR_API + "?" + p, { headers: { apikey: SUPABASE_ANAHTAR } });
+      if (!cevap.ok) throw new Error(cevap.status);
+      satirlar = await cevap.json();
+    } catch (e) {
+      if (no === ldIstekNo) $("ldTablo").innerHTML = `<tr><td colspan="4" class="lider-bos">Tablo yüklenemedi. Sayfayı yenilemeyi dene.</td></tr>`;
+      return;
+    }
+    if (no !== ldIstekNo) return;   // bu arada başka bir filtre seçildiyse eski cevabı çizme
+
+    // Her oyuncunun (cihaz + takma ad) sadece en iyi skoru kalsın; liste zaten en iyiden başlıyor
+    const gorulen = new Set(), liste = [];
+    for (const s of satirlar) {
+      const anahtar = s.cihaz + "|" + s.takma_ad.toLocaleLowerCase("tr");
+      if (gorulen.has(anahtar)) continue;
+      gorulen.add(anahtar);
+      liste.push(s);
+      if (liste.length === 50) break;
+    }
+    if (liste.length === 0) {
+      $("ldTablo").innerHTML = `<tr><td colspan="4" class="lider-bos">Henüz skor yok. İlk sen ol!</td></tr>`;
+      return;
+    }
+    const benim = cihazKimligi();
+    const madalya = ["🥇", "🥈", "🥉"];
+    $("ldTablo").innerHTML = liste.map((s, i) => `
+      <tr class="${s.cihaz === benim ? "ben" : ""}">
+        <td class="sayi">${i < 3 ? `<span class="madalya">${madalya[i]}</span>` : i + 1}</td>
+        <td>${guvenli(s.takma_ad)}</td>
+        <td class="sayi"><b>${oyun === "gunluk" ? s.puan + "/5" : s.puan}</b></td>
+        <td class="sayi">${new Date(s.olusturma).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}</td>
+      </tr>`).join("");
+  }
+
+  for (const id of ["ldOyun", "ldLig", "ldSeviye", "ldDonem"]) $(id).addEventListener("change", ldYukle);
+
+  // ============================================================
   // AÇILIŞ: verileri yükle
   // ============================================================
   sekmeGoster();
@@ -1293,6 +1510,7 @@
       $("oyunLigSec").innerHTML = ligSecenekleri;
       $("gtLigSec").innerHTML = ligSecenekleri;
       $("syLigSec").innerHTML = `<option value="hepsi">🌍 Karışık (10 lig)</option>` + ligSecenekleri;
+      $("ldLig").innerHTML = ligSecenekleri;
       const tarih = new Date(VERI.guncelleme).toLocaleString("tr-TR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
       $("guncelleme").textContent = `Son güncelleme: ${tarih} · Veri kaynağı: ESPN · Her gün otomatik güncellenir`;
       ligDegisti();
@@ -1300,6 +1518,7 @@
       gtBaslangicYazilari();
       syBaslangicYazilari();
       gbBaslat();
+      if (location.hash === "#liderlik") ldYukle();
     } catch (e) {
       $("guncelleme").textContent = "";
       $("hata").hidden = false;

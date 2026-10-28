@@ -44,6 +44,14 @@ jobs:
       - name: Projeyi indir
         uses: actions/checkout@v5
 
+      # Supabase'in ücretsiz paketi 7 gün hiç kullanılmayan projeyi uyutur; her gün küçük bir okuma yapıyoruz
+      - name: Liderlik veritabanını uyanık tut
+        if: github.event_name != 'push'
+        run: |
+          curl -fsS "https://xsskbnvpsjsuvjovehxc.supabase.co/rest/v1/skorlar?select=id&limit=1" \
+            -H "apikey: sb_publishable_vhq-lCqjhd4418JJmDI_4w_4CqfHv-X" > /dev/null \
+            && echo "Veritabanı uyanık." || echo "::warning::Veritabanına ulaşılamadı."
+
       - name: ESPN'den verileri indir
         if: github.event_name != 'push'
         shell: pwsh

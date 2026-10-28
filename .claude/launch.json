@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "futbol",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "01_FUTBOL\\sunucu.ps1", "-TarayiciAcma"],
+      "port": 8765
+    }
+  ]
+}

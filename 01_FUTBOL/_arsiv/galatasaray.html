@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galatasaray İstatistikleri</title>
+
+  <!--
+    ============================================================
+    BU DOSYA NASIL ÇALIŞIR? (Yunus için not)
+    ------------------------------------------------------------
+    Bir web sayfası 3 parçadan oluşur:
+      1) HTML  -> Sayfada NE var (başlık, tablo, kutular)
+      2) CSS   -> Sayfa NASIL görünüyor (renkler, boyutlar)  -> <style> içinde
+      3) JavaScript -> Sayfa NE YAPIYOR (hesaplama, tıklama) -> <script> içinde
+    Oyuncu verilerini değiştirmek istersen en alttaki
+    "OYUNCU VERİLERİ" bölümüne bakman yeterli.
+    ============================================================
+  -->
+
+  <style>
+    /* ---------- RENKLER (Galatasaray sarı-kırmızı) ---------- */
+    :root {
+      --kirmizi: #a90432;
+      --sari: #fdb912;
+      --arkaplan: #f6f3ee;
+      --kart: #ffffff;
+      --yazi: #1f1a17;
+      --soluk: #6b625c;
+      --cizgi: #e6dfd6;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: var(--arkaplan);
+      color: var(--yazi);
+    }
+
+    /* ---------- ÜST BAŞLIK ---------- */
+    header {
+      background: linear-gradient(135deg, var(--kirmizi) 0%, var(--kirmizi) 60%, var(--sari) 60%);
+      color: white;
+      padding: 32px 16px;
+    }
+    header .ic { max-width: 960px; margin: 0 auto; }
+    header h1 { margin: 0; font-size: 34px; letter-spacing: 1px; }
+    header p { margin: 6px 0 0; opacity: 0.9; }
+
+    main { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
+
+    .uyari {
+      background: #fff6dc;
+      border-left: 4px solid var(--sari);
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    h2 { font-size: 20px; margin: 32px 0 12px; }
+
+    /* ---------- ÖZET KUTULARI ---------- */
+    .kutular {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    .kutu {
+      background: var(--kart);
+      border-radius: 10px;
+      padding: 16px;
+      border-top: 4px solid var(--kirmizi);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .kutu .etiket { font-size: 13px; color: var(--soluk); }
+    .kutu .deger { font-size: 30px; font-weight: 700; margin-top: 4px; }
+    .kutu .alt { font-size: 13px; color: var(--soluk); margin-top: 2px; }
+
+    /* ---------- GOL GRAFİĞİ (çubuklar) ---------- */
+    .grafik {
+      background: var(--kart);
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .satir {
+      display: grid;
+      grid-template-columns: 150px 1fr 32px;
+      align-items: center;
+      gap: 10px;
+      margin: 8px 0;
+      font-size: 14px;
+    }
+    .cubuk-zemin { background: var(--cizgi); border-radius: 4px; height: 18px; }
+    .cubuk { background: var(--kirmizi); height: 100%; border-radius: 4px; }
+    .satir .sayi { font-weight: 700; text-align: right; }
+
+    /* ---------- OYUNCU TABLOSU ---------- */
+    .tablo-kap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--kart);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      font-size: 14px;
+    }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--cizgi); }
+    th {
+      background: var(--kirmizi);
+      color: white;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    th:hover { background: #8a0329; }
+    td.sayi, th.sayi { text-align: right; }
+    tr:last-child td { border-bottom: none; }
+    .ipucu { font-size: 13px; color: var(--soluk); margin-top: 8px; }
+
+    @media (max-width: 520px) {
+      .satir { grid-template-columns: 100px 1fr 28px; }
+      header h1 { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="ic">
+      <h1>GALATASARAY</h1>
+      <p>Oyuncu istatistikleri · 2026-27 sezonu</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="uyari">
+      ⚠️ Buradaki sayılar <b>örnek verilerdir</b>, gerçek değildir.
+      Sonraki adımda gerçek istatistiklerle değiştireceğiz.
+    </div>
+
+    <h2>Özet</h2>
+    <div class="kutular" id="ozet"></div>
+
+    <h2>Gol Krallığı</h2>
+    <div class="grafik" id="grafik"></div>
+
+    <h2>Tüm Oyuncular</h2>
+    <div class="tablo-kap">
+      <table>
+        <thead>
+          <tr>
+            <th data-alan="isim">Oyuncu</th>
+            <th data-alan="mevki">Mevki</th>
+            <th data-alan="mac" class="sayi">Maç</th>
+            <th data-alan="gol" class="sayi">Gol</th>
+            <th data-alan="asist" class="sayi">Asist</th>
+            <th data-alan="dakika" class="sayi">Dakika</th>
+          </tr>
+        </thead>
+        <tbody id="tablo"></tbody>
+      </table>
+    </div>
+    <p class="ipucu">💡 Sütun başlığına tıklarsan tablo o sütuna göre sıralanır.</p>
+  </main>
+
+  <script>
+    // ============================================================
+    // OYUNCU VERİLERİ
+    // Her satır bir oyuncu. Sayıları değiştirip dosyayı kaydet,
+    // sonra tarayıcıda sayfayı yenile (F5) -> sayfa güncellenir.
+    // (Şu an ÖRNEK sayılar.)
+    // ============================================================
+    const oyuncular = [
+      { isim: "Victor Osimhen",       mevki: "Forvet",    mac: 10, gol: 9, asist: 2, dakika: 840 },
+      { isim: "Mauro Icardi",         mevki: "Forvet",    mac: 8,  gol: 4, asist: 1, dakika: 410 },
+      { isim: "Barış Alper Yılmaz",   mevki: "Kanat",     mac: 10, gol: 4, asist: 5, dakika: 790 },
+      { isim: "Leroy Sané",           mevki: "Kanat",     mac: 9,  gol: 3, asist: 4, dakika: 650 },
+      { isim: "Yunus Akgün",          mevki: "Kanat",     mac: 9,  gol: 2, asist: 3, dakika: 520 },
+      { isim: "Gabriel Sara",         mevki: "Orta Saha", mac: 10, gol: 2, asist: 4, dakika: 860 },
+      { isim: "Lucas Torreira",       mevki: "Orta Saha", mac: 10, gol: 1, asist: 1, dakika: 880 },
+      { isim: "Mario Lemina",         mevki: "Orta Saha", mac: 7,  gol: 0, asist: 1, dakika: 480 },
+      { isim: "Davinson Sánchez",     mevki: "Defans",    mac: 10, gol: 1, asist: 0, dakika: 900 },
+      { isim: "Abdülkerim Bardakcı",  mevki: "Defans",    mac: 9,  gol: 1, asist: 0, dakika: 810 },
+      { isim: "Uğurcan Çakır",        mevki: "Kaleci",    mac: 10, gol: 0, asist: 0, dakika: 900 },
+    ];
+
+    // ---------- 1) ÖZET KUTULARI ----------
+    // Toplamları hesapla
+    let toplamGol = 0;
+    let toplamAsist = 0;
+    for (const o of oyuncular) {
+      toplamGol += o.gol;
+      toplamAsist += o.asist;
+    }
+    // En çok gol atanı ve en çok asist yapanı bul
+    const golcu = [...oyuncular].sort((a, b) => b.gol - a.gol)[0];
+    const asistci = [...oyuncular].sort((a, b) => b.asist - a.asist)[0];
+
+    document.getElementById("ozet").innerHTML = `
+      <div class="kutu"><div class="etiket">Toplam Gol</div><div class="deger">${toplamGol}</div></div>
+      <div class="kutu"><div class="etiket">Toplam Asist</div><div class="deger">${toplamAsist}</div></div>
+      <div class="kutu"><div class="etiket">Gol Kralı</div><div class="deger">${golcu.gol}</div><div class="alt">${golcu.isim}</div></div>
+      <div class="kutu"><div class="etiket">Asist Kralı</div><div class="deger">${asistci.asist}</div><div class="alt">${asistci.isim}</div></div>
+    `;
+
+    // ---------- 2) GOL GRAFİĞİ ----------
+    // Gol atan oyuncuları çoktan aza sırala, her biri için bir çubuk çiz
+    const golAtanlar = oyuncular.filter(o => o.gol > 0).sort((a, b) => b.gol - a.gol);
+    const enYuksek = golAtanlar[0].gol;
+    let grafikHtml = "";
+    for (const o of golAtanlar) {
+      const yuzde = (o.gol / enYuksek) * 100;   // çubuğun uzunluğu
+      grafikHtml += `
+        <div class="satir">
+          <span>${o.isim}</span>
+          <div class="cubuk-zemin"><div class="cubuk" style="width:${yuzde}%"></div></div>
+          <span class="sayi">${o.gol}</span>
+        </div>`;
+    }
+    document.getElementById("grafik").innerHTML = grafikHtml;
+
+    // ---------- 3) OYUNCU TABLOSU ----------
+    function tabloyuCiz(liste) {
+      let html = "";
+      for (const o of liste) {
+        html += `<tr>
+          <td>${o.isim}</td>
+          <td>${o.mevki}</td>
+          <td class="sayi">${o.mac}</td>
+          <td class="sayi">${o.gol}</td>
+          <td class="sayi">${o.asist}</td>
+          <td class="sayi">${o.dakika}</td>
+        </tr>`;
+      }
+      document.getElementById("tablo").innerHTML = html;
+    }
+    tabloyuCiz(oyuncular);
+
+    // Başlığa tıklanınca sırala (sayılarda büyükten küçüğe, isimlerde A-Z)
+    for (const baslik of document.querySelectorAll("th")) {
+      baslik.addEventListener("click", () => {
+        const alan = baslik.dataset.alan;
+        const sirali = [...oyuncular].sort((a, b) =>
+          typeof a[alan] === "number" ? b[alan] - a[alan] : a[alan].localeCompare(b[alan], "tr")
+        );
+        tabloyuCiz(sirali);
+      });
+    }
+  </script>
+</body>
+</html>

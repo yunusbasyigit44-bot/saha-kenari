@@ -1,0 +1,657 @@
+<title>Saha Kenarı</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
+
+<!--
+  ============================================================
+  SAHA KENARI - paylaşılan sürüm (Yunus için not)
+  ------------------------------------------------------------
+  Bu sayfa claude.ai'de yayınlanıyor, linki olan herkes açabilir.
+  Veriler data.json ve gorseller.json dosyalarından geliyor.
+  Bu dosyaları veri_guncelle.ps1 her gün ESPN'den yeniden indiriyor.
+  İki bölüm var: #istatistik ve #oyun (İpucu Avı)
+  ============================================================
+-->
+
+<style>
+  /* Düzen: üstte koyu "saha" bandı, altında sekmeler; içerik tek sütun, geniş ekranda iki sütun */
+  :root {
+    --zemin: #eef1ec;
+    --kart: #ffffff;
+    --yazi: #18211b;
+    --soluk: #5d6b61;
+    --cizgi: #d9e0da;
+    --saha: #12402a;
+    --saha-yazi: #f4f7f2;
+    --vurgu: #e8b10c;
+    --dogru: #1f8a4c;
+    --yanlis: #c23b2e;
+    --secili: #fff3cc;
+    --takim: #12402a;
+    --takim-yazi: #ffffff;
+    --font-baslik: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --font-govde: "Barlow", "Segoe UI", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --zemin: #0f1511; --kart: #18211b; --yazi: #e6ece7; --soluk: #95a49a; --cizgi: #2a362e;
+      --saha: #0b2a1b; --secili: #3b3315; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --zemin: #0f1511; --kart: #18211b; --yazi: #e6ece7; --soluk: #95a49a; --cizgi: #2a362e;
+    --saha: #0b2a1b; --secili: #3b3315; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--zemin); color: var(--yazi); font-family: var(--font-govde); font-size: 15px; }
+  .sar {
+    max-width: 1100px; margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  h1, h2, h3 { font-family: var(--font-baslik); text-wrap: balance; margin: 0; }
+  h2 { font-size: 22px; text-transform: uppercase; letter-spacing: 0.04em; margin: 26px 0 10px; }
+  .sayi, td.sayi, th.sayi { font-variant-numeric: tabular-nums; text-align: right; }
+
+  /* ---------- ÜST BANT ---------- */
+  .bant {
+    background:
+      repeating-linear-gradient(90deg, transparent 0 56px, rgba(255,255,255,0.035) 56px 112px),
+      var(--saha);
+    color: var(--saha-yazi);
+  }
+  .bant .sar { padding-block: 20px 0; }
+  .marka { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .marka h1 { font-size: 40px; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; }
+  .marka h1 span { color: var(--vurgu); }
+  .marka p { margin: 0; opacity: 0.8; font-size: 14px; }
+  .sekmeler { display: flex; gap: 4px; margin-top: 16px; }
+  .sekmeler a {
+    font-family: var(--font-baslik); font-size: 18px; font-weight: 700; letter-spacing: 0.04em;
+    text-transform: uppercase; text-decoration: none; color: var(--saha-yazi); opacity: 0.7;
+    padding: 10px 16px; border-radius: 8px 8px 0 0;
+  }
+  .sekmeler a:hover { opacity: 1; }
+  .sekmeler a.aktif { background: var(--zemin); color: var(--yazi); opacity: 1; }
+  .sekmeler a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, th:focus-visible {
+    outline: 3px solid var(--vurgu); outline-offset: 2px;
+  }
+
+  main.sar { padding-block: 20px 48px; }
+  .guncelleme { font-size: 13px; color: var(--soluk); margin: 0 0 14px; }
+
+  /* ---------- ORTAK PARÇALAR ---------- */
+  .kart { background: var(--kart); border: 1px solid var(--cizgi); border-radius: 10px; }
+  select, input {
+    font: inherit; font-size: 16px; color: var(--yazi); background: var(--kart);
+    border: 1px solid var(--cizgi); border-radius: 8px; padding: 9px 11px; min-width: 0;
+  }
+  button {
+    font: inherit; font-weight: 700; font-size: 15px; cursor: pointer;
+    border: none; border-radius: 8px; padding: 10px 16px;
+    background: var(--saha); color: var(--saha-yazi);
+  }
+  button.ikincil { background: var(--cizgi); color: var(--yazi); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .secimler { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+  .secimler label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--soluk);
+    text-transform: uppercase; letter-spacing: 0.06em; flex: 1 1 220px; }
+  .logo { width: 20px; height: 20px; object-fit: contain; vertical-align: middle; }
+  .bayrak { width: 20px; height: 14px; object-fit: cover; vertical-align: middle; border-radius: 2px; }
+
+  /* ---------- İSTATİSTİK: takım başlığı ---------- */
+  .takim-baslik {
+    background: var(--takim); color: var(--takim-yazi);
+    border-radius: 10px; padding: 16px; margin-top: 16px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .takim-baslik .logo-buyuk {
+    width: 64px; height: 64px; background: #fff; border-radius: 50%; padding: 8px; object-fit: contain; flex: none;
+  }
+  .takim-baslik h3 { font-size: 30px; font-weight: 800; text-transform: uppercase; }
+  .takim-baslik p { margin: 2px 0 0; font-size: 14px; opacity: 0.85; }
+
+  .duzen { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 24px; }
+  @media (min-width: 900px) { .duzen { grid-template-columns: minmax(0, 400px) minmax(0, 1fr); } }
+
+  .kutular { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .kutu { padding: 12px 14px; }
+  .kutu .etiket { font-size: 12px; color: var(--soluk); text-transform: uppercase; letter-spacing: 0.06em; }
+  .kutu .deger { font-family: var(--font-baslik); font-size: 34px; font-weight: 800; line-height: 1.1; }
+  .kutu .alt { font-size: 13px; color: var(--soluk); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .grafik { padding: 12px 14px; }
+  .satir { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr) 28px; gap: 10px; align-items: center; margin: 6px 0; font-size: 14px; }
+  .satir > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cubuk-zemin { background: var(--cizgi); height: 14px; border-radius: 3px; }
+  .cubuk { background: var(--vurgu); height: 100%; border-radius: 3px; }
+  .satir .sayi { font-weight: 700; }
+
+  .tablo-kap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--cizgi); white-space: nowrap; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--soluk); font-weight: 600; }
+  th.siralanir { cursor: pointer; user-select: none; }
+  th.siralanir:hover { color: var(--yazi); }
+  tr:last-child td { border-bottom: none; }
+  #puanTablosu tr { cursor: pointer; }
+  #puanTablosu tr:hover td { background: var(--zemin); }
+  tr.secili td { background: var(--secili) !important; font-weight: 700; }
+  .ipucu-yazi { font-size: 13px; color: var(--soluk); margin: 8px 0 0; }
+
+  /* ---------- OYUN ---------- */
+  .oyun { max-width: 720px; }
+  .oyun .kart { padding: 18px; }
+  .kurallar { padding-left: 20px; line-height: 1.7; margin: 8px 0 14px; }
+  .skorlar { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; font-size: 14px; color: var(--soluk); }
+  .skorlar b { font-family: var(--font-baslik); font-size: 24px; color: var(--yazi); }
+  .ipucu {
+    display: flex; gap: 12px; align-items: center; padding: 10px 12px; min-height: 52px;
+    border: 1px dashed var(--cizgi); border-radius: 8px; margin-bottom: 8px;
+  }
+  .ipucu .no {
+    flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--cizgi); font-family: var(--font-baslik); font-weight: 800; font-size: 18px;
+  }
+  .ipucu.acik { border-style: solid; border-color: var(--saha); }
+  .ipucu.acik .no { background: var(--saha); color: var(--saha-yazi); }
+  .ipucu .baslik { font-size: 12px; color: var(--soluk); text-transform: uppercase; letter-spacing: 0.05em; }
+  .ipucu .icerik { font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .ipucu .puan { margin-left: auto; font-size: 13px; color: var(--soluk); font-variant-numeric: tabular-nums; }
+  .tahmin { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .tahmin input { flex: 1 1 220px; }
+  .mesaj { margin-top: 12px; font-weight: 700; min-height: 22px; }
+  .mesaj.dogru { color: var(--dogru); }
+  .mesaj.yanlis { color: var(--yanlis); }
+  .sonuc { text-align: center; }
+  .sonuc .buyuk { font-family: var(--font-baslik); font-size: 72px; font-weight: 800; color: var(--saha); line-height: 1; }
+  :root[data-theme="dark"] .sonuc .buyuk { color: var(--vurgu); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sonuc .buyuk { color: var(--vurgu); } }
+  .gecmis { text-align: left; margin: 16px auto; padding-left: 20px; line-height: 1.8; max-width: 420px; }
+
+  .hata { padding: 14px; border-left: 4px solid var(--yanlis); }
+
+  @media (max-width: 520px) {
+    .marka h1 { font-size: 32px; }
+    .takim-baslik h3 { font-size: 24px; }
+    .satir { grid-template-columns: minmax(0, 110px) minmax(0, 1fr) 26px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .cubuk { transition: width 0.4s ease; }
+  }
+</style>
+
+<div class="bant">
+  <div class="sar">
+    <div class="marka">
+      <h1>Saha <span>Kenarı</span></h1>
+      <p>10 ligin güncel istatistikleri ve futbol bilgi oyunu</p>
+    </div>
+    <nav class="sekmeler">
+      <a href="#istatistik" id="sekmeIstatistik">İstatistikler</a>
+      <a href="#oyun" id="sekmeOyun">İpucu Avı</a>
+    </nav>
+  </div>
+</div>
+
+<main class="sar">
+  <p class="guncelleme" id="guncelleme">Veriler yükleniyor…</p>
+  <div class="kart hata" id="hata" hidden></div>
+
+  <!-- ===================== İSTATİSTİKLER ===================== -->
+  <section id="bolumIstatistik">
+    <div class="secimler">
+      <label>Lig <select id="ligSec"></select></label>
+      <label>Takım <select id="takimSec"></select></label>
+    </div>
+
+    <div class="takim-baslik">
+      <img class="logo-buyuk" id="takimLogo" alt="">
+      <div>
+        <h3 id="takimAdi">–</h3>
+        <p id="takimAlt"></p>
+      </div>
+    </div>
+
+    <div class="duzen">
+      <div>
+        <h2>Puan Durumu</h2>
+        <div class="kart tablo-kap">
+          <table>
+            <thead><tr><th>#</th><th>Takım</th><th class="sayi">O</th><th class="sayi">G</th><th class="sayi">B</th><th class="sayi">M</th><th class="sayi">AV</th><th class="sayi">P</th></tr></thead>
+            <tbody id="puanTablosu"></tbody>
+          </table>
+        </div>
+        <p class="ipucu-yazi">Bir takıma tıklarsan onun istatistikleri açılır.</p>
+      </div>
+      <div>
+        <h2>Takım Özeti</h2>
+        <div class="kutular" id="ozet"></div>
+        <h2>Gol Krallığı</h2>
+        <div class="kart grafik" id="grafik"></div>
+      </div>
+    </div>
+
+    <h2>Kadro</h2>
+    <div class="kart tablo-kap">
+      <table>
+        <thead>
+          <tr>
+            <th class="siralanir" data-alan="i" tabindex="0">Oyuncu</th>
+            <th class="siralanir" data-alan="mevki" tabindex="0">Mevki</th>
+            <th class="siralanir" data-alan="u" tabindex="0">Uyruk</th>
+            <th class="siralanir sayi" data-alan="y" tabindex="0">Yaş</th>
+            <th class="siralanir sayi" data-alan="mac" tabindex="0">Maç</th>
+            <th class="siralanir sayi" data-alan="g" tabindex="0">Gol</th>
+            <th class="siralanir sayi" data-alan="a" tabindex="0">Asist</th>
+            <th class="siralanir sayi" data-alan="s" tabindex="0">Şut</th>
+            <th class="siralanir sayi" data-alan="sk" tabindex="0">Sarı</th>
+            <th class="siralanir sayi" data-alan="kk" tabindex="0">Kırmızı</th>
+          </tr>
+        </thead>
+        <tbody id="oyuncuTablosu"></tbody>
+      </table>
+    </div>
+    <p class="ipucu-yazi">Sütun başlığına tıklarsan kadro o sütuna göre sıralanır. Veri kaynağı: ESPN.</p>
+  </section>
+
+  <!-- ===================== İPUCU AVI ===================== -->
+  <section id="bolumOyun" class="oyun" hidden>
+    <div id="ekranBaslangic" class="kart">
+      <h2 style="margin-top: 0;">İpucu Avı</h2>
+      <ol class="kurallar">
+        <li>Seçtiğin ligden bu sezon oynamış rastgele bir oyuncu gelir.</li>
+        <li>İpuçları tek tek açılır: 1. ipucunda bilirsen <b>100</b>, son ipucunda <b>20</b> puan.</li>
+        <li>Yanlış tahmin yaparsan bir sonraki ipucu açılır.</li>
+        <li>Oyun <b>5 tur</b> sürer.</li>
+      </ol>
+      <div class="secimler">
+        <label>Lig <select id="oyunLigSec"></select></label>
+        <label>Seviye <select id="seviyeSec"></select></label>
+        <button id="baslatBtn">Oyuna Başla</button>
+      </div>
+      <p class="ipucu-yazi" id="seviyeAciklama"></p>
+      <p class="ipucu-yazi" id="rekorYazi"></p>
+    </div>
+
+    <div id="ekranOyun" class="kart" hidden>
+      <div class="skorlar">
+        <span>Tur <b id="turYazi">1/5</b></span>
+        <span id="seviyeYazi"></span>
+        <span>Puan <b id="puanYazi">0</b></span>
+      </div>
+      <div id="ipuclari"></div>
+      <div class="tahmin">
+        <input id="tahminKutusu" list="oyuncuListesi" placeholder="Oyuncunun adını yaz…" autocomplete="off">
+        <datalist id="oyuncuListesi"></datalist>
+        <button id="tahminBtn">Tahmin Et</button>
+        <button id="pasBtn" class="ikincil">Pas</button>
+      </div>
+      <div id="mesaj" class="mesaj"></div>
+      <button id="sonrakiBtn" hidden style="margin-top: 10px;">Sonraki Tur</button>
+    </div>
+
+    <div id="ekranSonuc" class="kart sonuc" hidden>
+      <div>Toplam puanın</div>
+      <div class="buyuk" id="toplamPuan">0</div>
+      <div id="rekorMesaj"></div>
+      <ol class="gecmis" id="gecmis"></ol>
+      <button id="tekrarBtn">Tekrar Oyna</button>
+    </div>
+  </section>
+</main>
+
+<script>
+  // ============================================================
+  // ORTAK
+  // ============================================================
+  const $ = id => document.getElementById(id);
+  const MEVKI = { G: "Kaleci", D: "Defans", M: "Orta Saha", F: "Forvet" };
+  const BAYRAK_EMOJI = { "tur.1": "🇹🇷", "eng.1": "🏴", "esp.1": "🇪🇸", "ita.1": "🇮🇹", "ger.1": "🇩🇪",
+                         "fra.1": "🇫🇷", "por.1": "🇵🇹", "ned.1": "🇳🇱", "ksa.1": "🇸🇦", "usa.1": "🇺🇸" };
+
+  let VERI = null;              // data.json
+  let GORSEL = { logo: {}, bayrak: {} };   // gorseller.json
+
+  const logoUrl = id => GORSEL.logo[id] || "";
+  const bayrakUrl = kod => GORSEL.bayrak[kod] || "";
+  const ligBul = kod => VERI.ligler.find(l => l.kod === kod) || VERI.ligler[0];
+  const mevki = o => MEVKI[o.p] || o.p || "-";
+
+  function hafizaOku(ad, varsayilan) { try { return localStorage.getItem(ad) ?? varsayilan; } catch (e) { return varsayilan; } }
+  function hafizaYaz(ad, deger) { try { localStorage.setItem(ad, deger); } catch (e) {} }
+
+  // Takım rengi açıksa üstüne siyah yazı, koyuysa beyaz yazı
+  function yaziRengi(hex) {
+    const r = parseInt(hex.slice(0, 2), 16), g = parseInt(hex.slice(2, 4), 16), b = parseInt(hex.slice(4, 6), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) > 170 ? "#111111" : "#ffffff";
+  }
+
+  // Puan durumunu sıraya koy
+  function siraliPuan(lig) {
+    return [...lig.puan].sort((a, b) => (a.sira && b.sira) ? a.sira - b.sira : (b.p - a.p) || (b.av - a.av));
+  }
+
+  // ============================================================
+  // SEKMELER (#istatistik / #oyun)
+  // ============================================================
+  function sekmeGoster() {
+    const oyun = location.hash === "#oyun";
+    $("bolumIstatistik").hidden = oyun;
+    $("bolumOyun").hidden = !oyun;
+    $("sekmeIstatistik").classList.toggle("aktif", !oyun);
+    $("sekmeOyun").classList.toggle("aktif", oyun);
+  }
+  for (const [id, hash] of [["sekmeIstatistik", "#istatistik"], ["sekmeOyun", "#oyun"]]) {
+    $(id).addEventListener("click", e => {
+      e.preventDefault();
+      history.replaceState(null, "", hash);
+      sekmeGoster();
+    });
+  }
+  window.addEventListener("hashchange", sekmeGoster);
+
+  // ============================================================
+  // İSTATİSTİKLER
+  // ============================================================
+  let secilenLig = hafizaOku("lig", "tur.1");
+  let secilenTakim = hafizaOku("takim", "432");
+  let kadro = [];
+
+  function ligDegisti() {
+    const lig = ligBul(secilenLig);
+    secilenLig = lig.kod;
+    const takimIdleri = lig.puan.map(t => t.id);
+    const takimlar = takimIdleri.map(id => ({ id, ...VERI.takimlar[id] }))
+      .sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
+    if (!takimIdleri.includes(secilenTakim)) secilenTakim = siraliPuan(lig)[0].id;
+
+    $("ligSec").value = lig.kod;
+    $("takimSec").innerHTML = takimlar.map(t => `<option value="${t.id}">${t.ad}</option>`).join("");
+
+    $("puanTablosu").innerHTML = siraliPuan(lig).map((t, i) => `
+      <tr data-id="${t.id}">
+        <td class="sayi">${i + 1}</td>
+        <td><img class="logo" src="${logoUrl(t.id)}" alt=""> ${VERI.takimlar[t.id]?.kisa || "?"}</td>
+        <td class="sayi">${t.o}</td><td class="sayi">${t.g}</td><td class="sayi">${t.b}</td><td class="sayi">${t.m}</td>
+        <td class="sayi">${t.av > 0 ? "+" : ""}${t.av}</td>
+        <td class="sayi"><b>${t.p}</b></td>
+      </tr>`).join("");
+    takimDegisti();
+  }
+
+  function takimDegisti() {
+    const lig = ligBul(secilenLig);
+    const takim = VERI.takimlar[secilenTakim];
+    $("takimSec").value = secilenTakim;
+    hafizaYaz("lig", secilenLig);
+    hafizaYaz("takim", secilenTakim);
+
+    const renk = takim.renk || "12402a";
+    document.documentElement.style.setProperty("--takim", "#" + renk);
+    document.documentElement.style.setProperty("--takim-yazi", yaziRengi(renk));
+    $("takimLogo").src = logoUrl(secilenTakim);
+    $("takimAdi").textContent = takim.ad;
+    const sira = siraliPuan(lig).findIndex(t => t.id === secilenTakim) + 1;
+    const p = lig.puan.find(t => t.id === secilenTakim);
+    $("takimAlt").textContent = `${lig.sezon || lig.ad} · ${sira}. sırada · ${p?.p ?? 0} puan`;
+
+    for (const tr of $("puanTablosu").querySelectorAll("tr")) tr.classList.toggle("secili", tr.dataset.id === secilenTakim);
+
+    kadro = lig.oyuncular.filter(o => o.t === secilenTakim).map(o => ({ ...o, mevki: mevki(o) }));
+
+    // Özet kutuları
+    let gol = 0, asist = 0;
+    for (const o of kadro) { gol += o.g; asist += o.a; }
+    const golcu = [...kadro].sort((a, b) => b.g - a.g)[0];
+    const asistci = [...kadro].sort((a, b) => b.a - a.a)[0];
+    $("ozet").innerHTML = `
+      <div class="kart kutu"><div class="etiket">Toplam gol</div><div class="deger sayi" style="text-align:left">${gol}</div><div class="alt">Lig maçlarında</div></div>
+      <div class="kart kutu"><div class="etiket">Toplam asist</div><div class="deger sayi" style="text-align:left">${asist}</div><div class="alt">Lig maçlarında</div></div>
+      <div class="kart kutu"><div class="etiket">Gol kralı</div><div class="deger">${golcu?.g || 0}</div><div class="alt">${golcu?.g ? golcu.i : "-"}</div></div>
+      <div class="kart kutu"><div class="etiket">Asist kralı</div><div class="deger">${asistci?.a || 0}</div><div class="alt">${asistci?.a ? asistci.i : "-"}</div></div>`;
+
+    // Gol grafiği
+    const golcular = kadro.filter(o => o.g > 0).sort((a, b) => b.g - a.g).slice(0, 10);
+    $("grafik").innerHTML = golcular.length === 0
+      ? `<p class="ipucu-yazi" style="margin:0">Bu sezon henüz gol atan oyuncu yok.</p>`
+      : golcular.map(o => `
+        <div class="satir">
+          <span>${o.i}</span>
+          <div class="cubuk-zemin"><div class="cubuk" style="width:${(o.g / golcular[0].g) * 100}%"></div></div>
+          <span class="sayi">${o.g}</span>
+        </div>`).join("");
+
+    kadroyuCiz([...kadro].sort((a, b) => b.mac - a.mac));
+  }
+
+  function kadroyuCiz(liste) {
+    $("oyuncuTablosu").innerHTML = liste.map(o => `
+      <tr>
+        <td>${o.i}</td>
+        <td>${o.mevki}</td>
+        <td>${o.uk ? `<img class="bayrak" src="${bayrakUrl(o.uk)}" alt=""> ` : ""}${o.u || "-"}</td>
+        <td class="sayi">${o.y || "-"}</td>
+        <td class="sayi">${o.mac}</td>
+        <td class="sayi">${o.g}</td>
+        <td class="sayi">${o.a}</td>
+        <td class="sayi">${o.s}</td>
+        <td class="sayi">${o.sk}</td>
+        <td class="sayi">${o.kk}</td>
+      </tr>`).join("");
+  }
+
+  $("ligSec").addEventListener("change", e => { secilenLig = e.target.value; ligDegisti(); });
+  $("takimSec").addEventListener("change", e => { secilenTakim = e.target.value; takimDegisti(); });
+  $("puanTablosu").addEventListener("click", e => {
+    const tr = e.target.closest("tr");
+    if (tr) { secilenTakim = tr.dataset.id; takimDegisti(); }
+  });
+  for (const th of document.querySelectorAll("th.siralanir")) {
+    const sirala = () => {
+      const alan = th.dataset.alan;
+      kadroyuCiz([...kadro].sort((a, b) =>
+        typeof a[alan] === "number" ? b[alan] - a[alan] : String(a[alan] ?? "").localeCompare(String(b[alan] ?? ""), "tr")));
+    };
+    th.addEventListener("click", sirala);
+    th.addEventListener("keydown", e => { if (e.key === "Enter") sirala(); });
+  }
+
+  // ============================================================
+  // İPUCU AVI
+  // ============================================================
+  const TUR_SAYISI = 5;
+  const PUANLAR = [100, 80, 60, 40, 20];
+  const EN_AZ_MAC = 3;
+  const SEVIYELER = {
+    kolay: { ad: "Kolay", buyukler: true, ilkSira: 6, macOrani: 0.7,
+             aciklama: "Ligin büyük kulüplerinin (Süper Lig'de GS, FB, BJK, TS) neredeyse her maç oynayan oyuncuları." },
+    orta:  { ad: "Orta", ilkSira: 0, macOrani: 0.6, aciklama: "Tüm takımlardan, düzenli oynayan oyuncular." },
+    zor:   { ad: "Zor", ilkSira: 0, macOrani: 0, aciklama: "Bu sezon en az 3 maça çıkmış herkes. Gerçek uzmanlar için." },
+  };
+  const BUYUK_KULUPLER = {
+    "tur.1": ["432", "436", "1895", "997"],
+    "eng.1": ["359", "363", "364", "382", "360", "367"],
+    "esp.1": ["86", "83", "1068"],
+    "ita.1": ["103", "110", "111", "114", "104"],
+    "ger.1": ["132", "124", "131"],
+    "fra.1": ["160", "176", "174", "167"],
+    "por.1": ["1929", "437", "2250"],
+    "ned.1": ["139", "142", "148"],
+    "ksa.1": ["8346", "929", "2276", "817"],
+  };
+
+  let adaylar = [], tur = 0, puan = 0, acikIpucu = 0, cevap = null, gecmis = [];
+
+  function oyunEkrani(ad) {
+    for (const e of ["ekranBaslangic", "ekranOyun", "ekranSonuc"]) $(e).hidden = e !== ad;
+  }
+
+  function sadelestir(yazi) {
+    return yazi.toLocaleLowerCase("tr").replace(/ı/g, "i")
+      .normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim();
+  }
+
+  const rekorAnahtari = () => "rekor_" + $("oyunLigSec").value + "_" + $("seviyeSec").value;
+  const rekoruOku = () => Number(hafizaOku(rekorAnahtari(), 0)) || 0;
+
+  function baslangicYazilari() {
+    $("seviyeAciklama").textContent = SEVIYELER[$("seviyeSec").value].aciklama;
+    const r = rekoruOku();
+    $("rekorYazi").textContent = r ? `Bu lig ve seviyedeki rekorun: ${r} puan` : "";
+  }
+
+  function adaylariSec(ligKodu, seviyeKodu) {
+    const lig = ligBul(ligKodu), sev = SEVIYELER[seviyeKodu];
+    const siralar = {};
+    siraliPuan(lig).forEach((t, i) => siralar[t.id] = i + 1);
+    const enCokMac = Math.max(0, ...lig.oyuncular.map(o => o.mac));
+    const enAzMac = Math.max(EN_AZ_MAC, Math.ceil(enCokMac * sev.macOrani));
+    const buyukler = sev.buyukler ? BUYUK_KULUPLER[ligKodu] : null;
+    let liste = lig.oyuncular.filter(o => {
+      if (o.mac < enAzMac) return false;
+      if (buyukler) return buyukler.includes(o.t);
+      return sev.ilkSira === 0 || siralar[o.t] <= sev.ilkSira;
+    });
+    if (liste.length < TUR_SAYISI) liste = lig.oyuncular.filter(o => o.mac >= 1);
+    return liste;
+  }
+
+  function ipuclari(o) {
+    const takim = VERI.takimlar[o.t];
+    const sezon = o.p === "G" ? `${o.mac} maç, ${o.kur} kurtarış` : `${o.mac} maç, ${o.g} gol, ${o.a} asist`;
+    return [
+      { baslik: "Mevki ve yaş", icerik: `${mevki(o)}, ${o.y ?? "?"} yaşında` },
+      { baslik: "Uyruk", icerik: `${o.uk ? `<img class="bayrak" src="${bayrakUrl(o.uk)}" alt="">` : ""}${o.u || "Bilinmiyor"}` },
+      { baslik: "Bu sezon (lig)", icerik: sezon },
+      { baslik: "Forma numarası", icerik: o.f ? `#${o.f}` : "Bilinmiyor" },
+      { baslik: "Takımı", icerik: `<img class="logo" src="${logoUrl(o.t)}" alt="">${takim.ad}` },
+    ];
+  }
+
+  function ipuclariniCiz() {
+    $("ipuclari").innerHTML = ipuclari(cevap).map((ip, i) => {
+      const acik = i <= acikIpucu;
+      return `
+        <div class="ipucu ${acik ? "acik" : ""}">
+          <div class="no">${i + 1}</div>
+          <div><div class="baslik">${ip.baslik}</div><div class="icerik">${acik ? ip.icerik : "Kilitli"}</div></div>
+          <div class="puan">${PUANLAR[i]} puan</div>
+        </div>`;
+    }).join("");
+  }
+
+  function yeniTur() {
+    tur++; acikIpucu = 0;
+    const sorulanlar = gecmis.map(g => g.i);
+    const kalan = adaylar.filter(o => !sorulanlar.includes(o.i));
+    cevap = kalan[Math.floor(Math.random() * kalan.length)];
+    $("turYazi").textContent = `${tur}/${TUR_SAYISI}`;
+    $("puanYazi").textContent = puan;
+    $("mesaj").textContent = ""; $("mesaj").className = "mesaj";
+    $("tahminKutusu").value = "";
+    for (const id of ["tahminKutusu", "tahminBtn", "pasBtn"]) $(id).disabled = false;
+    $("sonrakiBtn").hidden = true;
+    ipuclariniCiz();
+    $("tahminKutusu").focus();
+  }
+
+  function turuBitir(kazanilan, mesaj, dogru) {
+    puan += kazanilan;
+    gecmis.push({ i: cevap.i, takim: VERI.takimlar[cevap.t].ad, kazanilan });
+    acikIpucu = 4; ipuclariniCiz();
+    $("puanYazi").textContent = puan;
+    $("mesaj").textContent = mesaj;
+    $("mesaj").className = "mesaj " + (dogru ? "dogru" : "yanlis");
+    for (const id of ["tahminKutusu", "tahminBtn", "pasBtn"]) $(id).disabled = true;
+    $("sonrakiBtn").textContent = tur < TUR_SAYISI ? "Sonraki Tur" : "Sonucu Gör";
+    $("sonrakiBtn").hidden = false;
+    $("sonrakiBtn").focus();
+  }
+
+  function tahminEt() {
+    const tahmin = sadelestir($("tahminKutusu").value);
+    if (!tahmin) return;
+    const tamAd = sadelestir(cevap.i);
+    const soyad = tamAd.split(" ").slice(-1)[0];
+    if (tahmin === tamAd || (tahmin === soyad && soyad.length > 2)) {
+      turuBitir(PUANLAR[acikIpucu], `Doğru! ${cevap.i} (+${PUANLAR[acikIpucu]} puan)`, true);
+    } else if (acikIpucu < 4) {
+      acikIpucu++; ipuclariniCiz();
+      $("mesaj").textContent = "Yanlış, yeni ipucu açıldı."; $("mesaj").className = "mesaj yanlis";
+      $("tahminKutusu").value = ""; $("tahminKutusu").focus();
+    } else {
+      turuBitir(0, `Bilemedin. Doğru cevap: ${cevap.i}`, false);
+    }
+  }
+
+  function pasGec() {
+    if (acikIpucu < 4) {
+      acikIpucu++; ipuclariniCiz();
+      $("mesaj").textContent = "Yeni ipucu açıldı."; $("mesaj").className = "mesaj";
+    } else {
+      turuBitir(0, `Doğru cevap: ${cevap.i}`, false);
+    }
+  }
+
+  function oyunuBitir() {
+    oyunEkrani("ekranSonuc");
+    $("toplamPuan").textContent = puan;
+    const rekor = rekoruOku();
+    if (puan > rekor) { hafizaYaz(rekorAnahtari(), puan); $("rekorMesaj").textContent = "Yeni rekor!"; }
+    else $("rekorMesaj").textContent = `Bu lig ve seviyedeki rekorun: ${rekor}`;
+    $("gecmis").innerHTML = gecmis.map(g =>
+      `<li>${g.i} <span style="color:var(--soluk)">(${g.takim})</span>: <b>${g.kazanilan}</b></li>`).join("");
+  }
+
+  function oyunaBasla() {
+    const ligKodu = $("oyunLigSec").value;
+    adaylar = adaylariSec(ligKodu, $("seviyeSec").value);
+    $("oyuncuListesi").innerHTML = [...new Set(ligBul(ligKodu).oyuncular.map(o => o.i))]
+      .sort((a, b) => a.localeCompare(b, "tr")).map(i => `<option value="${i}">`).join("");
+    tur = 0; puan = 0; gecmis = [];
+    $("seviyeYazi").textContent = SEVIYELER[$("seviyeSec").value].ad;
+    oyunEkrani("ekranOyun");
+    yeniTur();
+  }
+
+  $("seviyeSec").innerHTML = Object.entries(SEVIYELER).map(([k, s]) => `<option value="${k}">${s.ad}</option>`).join("");
+  $("seviyeSec").addEventListener("change", baslangicYazilari);
+  $("oyunLigSec").addEventListener("change", baslangicYazilari);
+  $("baslatBtn").addEventListener("click", oyunaBasla);
+  $("tekrarBtn").addEventListener("click", () => { oyunEkrani("ekranBaslangic"); baslangicYazilari(); });
+  $("tahminBtn").addEventListener("click", tahminEt);
+  $("tahminKutusu").addEventListener("keydown", e => { if (e.key === "Enter") tahminEt(); });
+  $("pasBtn").addEventListener("click", pasGec);
+  $("sonrakiBtn").addEventListener("click", () => tur < TUR_SAYISI ? yeniTur() : oyunuBitir());
+
+  // ============================================================
+  // AÇILIŞ: verileri yükle
+  // ============================================================
+  sekmeGoster();
+  (async () => {
+    try {
+      VERI = await (await fetch("data.json")).json();
+      const ligSecenekleri = VERI.ligler.map(l => `<option value="${l.kod}">${BAYRAK_EMOJI[l.kod] || ""} ${l.ad}</option>`).join("");
+      $("ligSec").innerHTML = ligSecenekleri;
+      $("oyunLigSec").innerHTML = ligSecenekleri;
+      const tarih = new Date(VERI.guncelleme).toLocaleString("tr-TR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+      $("guncelleme").textContent = `Son güncelleme: ${tarih} · Veri kaynağı: ESPN · Her gün otomatik güncellenir`;
+      ligDegisti();
+      baslangicYazilari();
+    } catch (e) {
+      $("guncelleme").textContent = "";
+      $("hata").hidden = false;
+      $("hata").textContent = "Veriler yüklenemedi. Sayfayı yenilemeyi dene.";
+      return;
+    }
+    // Logolar ve bayraklar ayrı dosyada; gelince sayfayı yeniden çiz
+    try {
+      GORSEL = await (await fetch("gorseller.json")).json();
+      ligDegisti();
+    } catch (e) {}
+  })();
+</script>

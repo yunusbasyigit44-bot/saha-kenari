@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>İpucu Avı</title>
+
+  <!--
+    ============================================================
+    İPUCU AVI - FUTBOL BİLGİ OYUNU (Yunus için not)
+    ------------------------------------------------------------
+    Kurallar:
+      - Seçtiğin ligden rastgele bir oyuncu seçilir.
+      - İpuçları tek tek açılır. Ne kadar erken bilirsen o kadar çok puan.
+        1. ipucunda bilirsen 100, 2.'de 80, 3.'te 60, 4.'te 40, 5.'te 20 puan.
+      - Yanlış tahmin = bir sonraki ipucu açılır.
+      - Bir oyun 5 turdur.
+    Veriler futbol.html ile aynı yerden (ESPN) ve CANLI geliyor.
+    Sayfayı BASLAT.bat ile açıp üstteki "İpucu Avı" bağlantısına tıkla.
+    ============================================================
+  -->
+
+  <style>
+    :root {
+      --yesil: #0f5132;
+      --yesil-acik: #198754;
+      --altin: #f2b705;
+      --arkaplan: #eef3ef;
+      --kart: #ffffff;
+      --yazi: #1b1f1c;
+      --soluk: #5f6b63;
+      --cizgi: #dbe4dd;
+      --dogru: #198754;
+      --yanlis: #c0392b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: var(--arkaplan);
+      color: var(--yazi);
+    }
+
+    nav { background: #0b3d26; padding: 8px 16px; }
+    nav .ic { max-width: 760px; margin: 0 auto; display: flex; gap: 16px; }
+    nav a { color: #cfe8d9; text-decoration: none; font-size: 14px; }
+    nav a.aktif { color: white; font-weight: 700; }
+
+    header {
+      background: repeating-linear-gradient(90deg, var(--yesil) 0 60px, #12603b 60px 120px);
+      color: white;
+      padding: 28px 16px;
+      text-align: center;
+    }
+    header h1 { margin: 0; font-size: 32px; letter-spacing: 1px; }
+    header p { margin: 6px 0 0; opacity: 0.9; }
+
+    main { max-width: 760px; margin: 0 auto; padding: 20px 16px 48px; }
+
+    .kart {
+      background: var(--kart);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      margin-bottom: 16px;
+    }
+
+    select, input {
+      font-size: 16px;
+      padding: 10px 12px;
+      border: 1px solid var(--cizgi);
+      border-radius: 8px;
+      background: white;
+      width: 100%;
+    }
+    button {
+      font-size: 16px;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      background: var(--yesil-acik);
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:disabled { opacity: 0.5; cursor: default; }
+    button.ikincil { background: #e3e9e5; color: var(--yazi); }
+
+    /* ---------- BAŞLANGIÇ EKRANI ---------- */
+    .kurallar { padding-left: 20px; line-height: 1.7; margin: 8px 0 16px; }
+    .baslat-satir { display: flex; gap: 10px; flex-wrap: wrap; }
+    .baslat-satir select { flex: 1 1 220px; width: auto; }
+
+    /* ---------- SKOR ÇUBUĞU ---------- */
+    .skorlar { display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 12px; }
+    .skorlar b { font-size: 20px; }
+
+    /* ---------- İPUÇLARI ---------- */
+    .ipucu {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px dashed var(--cizgi);
+      margin-bottom: 8px;
+      min-height: 52px;
+    }
+    .ipucu .no {
+      flex: 0 0 34px; height: 34px;
+      border-radius: 50%;
+      background: var(--cizgi);
+      display: grid; place-items: center;
+      font-weight: 700;
+    }
+    .ipucu.acik { border: 1px solid var(--yesil-acik); background: #f3faf6; }
+    .ipucu.acik .no { background: var(--yesil-acik); color: white; }
+    .ipucu .baslik { font-size: 12px; color: var(--soluk); }
+    .ipucu .icerik { font-size: 17px; font-weight: 600; }
+    .ipucu img { width: 28px; height: 28px; vertical-align: middle; margin-right: 6px; object-fit: contain; }
+    .ipucu .puan { margin-left: auto; font-size: 13px; color: var(--soluk); }
+
+    /* ---------- TAHMİN ---------- */
+    .tahmin { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+    .tahmin input { flex: 1 1 240px; width: auto; }
+    .mesaj { margin-top: 12px; font-weight: 600; min-height: 24px; }
+    .mesaj.dogru { color: var(--dogru); }
+    .mesaj.yanlis { color: var(--yanlis); }
+
+    .sonuc { text-align: center; }
+    .sonuc .buyuk { font-size: 56px; font-weight: 800; color: var(--yesil); }
+    .gecmis { text-align: left; margin: 16px 0; padding-left: 20px; line-height: 1.8; }
+
+    .yukleniyor { text-align: center; color: var(--soluk); padding: 30px 0; }
+    .gizli { display: none; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="ic">
+      <a href="futbol.html">📊 İstatistikler</a>
+      <a href="oyun.html" class="aktif">🎯 İpucu Avı</a>
+    </div>
+  </nav>
+
+  <header>
+    <h1>🎯 İPUCU AVI</h1>
+    <p>İpuçlarından oyuncuyu bul. Ne kadar erken bilirsen o kadar çok puan!</p>
+  </header>
+
+  <main>
+    <!-- 1) BAŞLANGIÇ EKRANI -->
+    <section id="ekranBaslangic" class="kart">
+      <b>Nasıl oynanır?</b>
+      <ol class="kurallar">
+        <li>Seçtiğin ligden bu sezon oynamış rastgele bir oyuncu gelir.</li>
+        <li>İpuçları tek tek açılır: 1. ipucunda bilirsen <b>100</b>, son ipucunda <b>20</b> puan.</li>
+        <li>Yanlış tahmin yaparsan bir sonraki ipucu açılır.</li>
+        <li>Oyun <b>5 tur</b> sürer.</li>
+      </ol>
+      <div class="baslat-satir">
+        <select id="ligSec"></select>
+        <select id="seviyeSec"></select>
+        <button id="baslatBtn">Oyuna Başla ▶</button>
+      </div>
+      <p id="seviyeAciklama" style="font-size: 14px; margin: 10px 0 0;"></p>
+      <p id="rekorYazi" style="color: var(--soluk); font-size: 14px; margin-bottom: 0;"></p>
+    </section>
+
+    <!-- 2) YÜKLENİYOR -->
+    <section id="ekranYukleniyor" class="kart yukleniyor gizli">
+      ⏳ Ligdeki tüm oyuncular yükleniyor… <span id="yuklemeSayac"></span>
+    </section>
+
+    <!-- 3) OYUN EKRANI -->
+    <section id="ekranOyun" class="kart gizli">
+      <div class="skorlar">
+        <span>Tur <b id="turYazi">1/5</b></span>
+        <span id="seviyeYazi"></span>
+        <span>Puan <b id="puanYazi">0</b></span>
+      </div>
+      <div id="ipuclari"></div>
+      <div class="tahmin">
+        <input id="tahminKutusu" list="oyuncuListesi" placeholder="Oyuncunun adını yaz…" autocomplete="off">
+        <datalist id="oyuncuListesi"></datalist>
+        <button id="tahminBtn">Tahmin Et</button>
+        <button id="pasBtn" class="ikincil">Pas</button>
+      </div>
+      <div id="mesaj" class="mesaj"></div>
+      <button id="sonrakiBtn" class="gizli" style="margin-top: 10px;">Sonraki Tur ▶</button>
+    </section>
+
+    <!-- 4) SONUÇ EKRANI -->
+    <section id="ekranSonuc" class="kart sonuc gizli">
+      <div>Toplam puanın</div>
+      <div class="buyuk" id="toplamPuan">0</div>
+      <div id="rekorMesaj"></div>
+      <ol class="gecmis" id="gecmis"></ol>
+      <button id="tekrarBtn">Tekrar Oyna 🔁</button>
+    </section>
+  </main>
+
+  <script>
+    // ============================================================
+    // AYARLAR
+    // ============================================================
+    const LIGLER = [
+      { kod: "tur.1", ad: "🇹🇷 Trendyol Süper Lig" },
+      { kod: "eng.1", ad: "🏴 Premier League" },
+      { kod: "esp.1", ad: "🇪🇸 LaLiga" },
+      { kod: "ita.1", ad: "🇮🇹 Serie A" },
+      { kod: "ger.1", ad: "🇩🇪 Bundesliga" },
+      { kod: "fra.1", ad: "🇫🇷 Ligue 1" },
+      { kod: "por.1", ad: "🇵🇹 Liga Portugal" },
+      { kod: "ned.1", ad: "🇳🇱 Eredivisie" },
+      { kod: "ksa.1", ad: "🇸🇦 Saudi Pro League" },
+      { kod: "usa.1", ad: "🇺🇸 MLS" },
+    ];
+    const API = "/espn/apis";
+    const TUR_SAYISI = 5;
+    const PUANLAR = [100, 80, 60, 40, 20];   // kaçıncı ipucunda bilirsen
+    // SEVİYELER: hangi oyuncuların sorulacağını belirler
+    //   buyukler -> sadece ligin büyük kulüplerinden oyuncu gelsin (liste aşağıda)
+    //   ilkSira  -> büyük kulüp listesi olmayan liglerde: puan durumunda ilk kaç takım (0 = hepsi)
+    //   macOrani -> ligde en çok maça çıkan oyuncunun en az yüzde kaçı kadar oynamış olsun
+    //               (örnek: en çok oynayan 10 maçsa ve oran 0.7 ise, en az 7 maç)
+    const SEVIYELER = {
+      kolay: { ad: "🟢 Kolay", buyukler: true, ilkSira: 6, macOrani: 0.7,
+               aciklama: "Ligin büyük kulüplerinin (Süper Lig'de GS, FB, BJK, TS) neredeyse her maç oynayan oyuncuları. Tanıdık isimler!" },
+      orta:  { ad: "🟡 Orta",  ilkSira: 0, macOrani: 0.6,
+               aciklama: "Tüm takımlardan, düzenli oynayan oyuncular." },
+      zor:   { ad: "🔴 Zor",   ilkSira: 0, macOrani: 0,
+               aciklama: "Bu sezon en az 3 maça çıkmış herkes. Sadece gerçek uzmanlar için!" },
+    };
+    // Kolay seviye için her ligin "herkesin bildiği" kulüpleri (sayılar ESPN'in takım numaraları)
+    const BUYUK_KULUPLER = {
+      "tur.1": ["432", "436", "1895", "997"],                  // Galatasaray, Fenerbahçe, Beşiktaş, Trabzonspor
+      "eng.1": ["359", "363", "364", "382", "360", "367"],     // Arsenal, Chelsea, Liverpool, Man City, Man Utd, Spurs
+      "esp.1": ["86", "83", "1068"],                           // Real Madrid, Barcelona, Atlético
+      "ita.1": ["103", "110", "111", "114", "104"],            // Milan, Inter, Juventus, Napoli, Roma
+      "ger.1": ["132", "124", "131"],                          // Bayern, Dortmund, Leverkusen
+      "fra.1": ["160", "176", "174", "167"],                   // PSG, Marseille, Monaco, Lyon
+      "por.1": ["1929", "437", "2250"],                        // Benfica, Porto, Sporting
+      "ned.1": ["139", "142", "148"],                          // Ajax, Feyenoord, PSV
+      "ksa.1": ["8346", "929", "2276", "817"],                 // Al Ahli, Al Hilal, Al Ittihad, Al Nassr
+    };
+    const EN_AZ_MAC = 3;                     // hiçbir seviyede bundan az oynayan sorulmaz
+    const MEVKI = { G: "Kaleci", D: "Defans", M: "Orta Saha", F: "Forvet" };
+
+    let tumOyuncular = [];   // ligdeki herkes (tahmin listesi için)
+    let adaylar = [];        // sorulabilecek oyuncular
+    let tur = 0, puan = 0, acikIpucu = 0, cevap = null, gecmis = [];
+
+    // ---------- Yardımcılar ----------
+    const $ = id => document.getElementById(id);
+
+    function ekranGoster(ad) {
+      for (const e of ["ekranBaslangic", "ekranYukleniyor", "ekranOyun", "ekranSonuc"]) {
+        $(e).classList.toggle("gizli", e !== ad);
+      }
+    }
+
+    async function veriCek(adres) {
+      const cevap = await fetch(adres);
+      if (!cevap.ok) throw new Error("Sunucu cevap vermedi (" + cevap.status + ")");
+      return cevap.json();
+    }
+
+    // "Barış Alper Yılmaz" ile "baris alper yilmaz" aynı sayılsın diye:
+    // küçük harf yap, Türkçe/aksanlı harfleri sadeleştir
+    function sadelestir(yazi) {
+      return yazi.toLocaleLowerCase("tr")
+        .replace(/ı/g, "i")
+        .normalize("NFD").replace(/[̀-ͯ]/g, "")
+        .replace(/\s+/g, " ").trim();
+    }
+
+    // Her seviyenin rekoru ayrı tutulur
+    function rekoruOku() {
+      try { return Number(localStorage.getItem("ipucuAviRekor_" + $("seviyeSec").value)) || 0; } catch (e) { return 0; }
+    }
+    function rekoruYaz(deger) {
+      try { localStorage.setItem("ipucuAviRekor_" + $("seviyeSec").value, deger); } catch (e) {}
+    }
+
+    function baslangicYazilariniGuncelle() {
+      $("seviyeAciklama").textContent = SEVIYELER[$("seviyeSec").value].aciklama;
+      const rekor = rekoruOku();
+      $("rekorYazi").textContent = rekor ? `🏆 Bu seviyedeki rekorun: ${rekor} puan` : "";
+    }
+
+    // ============================================================
+    // 1) LİGİ YÜKLE: her takımın kadrosunu tek tek çek
+    // ============================================================
+    async function ligiYukle(ligKodu) {
+      const [takimVerisi, puanVerisi] = await Promise.all([
+        veriCek(`${API}/site/v2/sports/soccer/${ligKodu}/teams`),
+        veriCek(`${API}/v2/sports/soccer/${ligKodu}/standings`),
+      ]);
+      const takimlar = takimVerisi.sports[0].leagues[0].teams.map(t => t.team);
+
+      // Her takımın puan durumundaki sırasını bul (Kolay seviye için)
+      const siralar = {};
+      const grup = puanVerisi.children ? puanVerisi.children[0] : puanVerisi;
+      const satirlar = (grup.standings?.entries || []).map(e => {
+        const s = {};
+        for (const st of e.stats) s[st.name] = st.value;
+        return { id: e.team.id, sira: s.rank, puan: s.points ?? 0, averaj: s.pointDifferential ?? 0 };
+      });
+      satirlar.sort((a, b) => (a.sira && b.sira) ? a.sira - b.sira : (b.puan - a.puan) || (b.averaj - a.averaj));
+      satirlar.forEach((t, i) => siralar[t.id] = i + 1);
+
+      tumOyuncular = [];
+      let biten = 0;
+      for (const takim of takimlar) {
+        const kadro = await veriCek(`${API}/site/v2/sports/soccer/${ligKodu}/teams/${takim.id}/roster`);
+        for (const a of kadro.athletes || []) {
+          const s = {};
+          for (const kat of a.statistics?.splits?.categories || []) {
+            for (const st of kat.stats) s[st.name] = st.value;
+          }
+          tumOyuncular.push({
+            isim: a.displayName,
+            mevki: MEVKI[a.position?.abbreviation] || a.position?.displayName || "?",
+            uyruk: a.citizenship || "Bilinmiyor",
+            bayrak: a.flag?.href || "",
+            yas: a.age,
+            forma: a.jersey,
+            takim: takim.displayName,
+            takimId: takim.id,
+            takimSirasi: siralar[takim.id] || 99,
+            logo: takim.logos?.[0]?.href || "",
+            mac: s.appearances ?? 0,
+            gol: s.totalGoals ?? 0,
+            asist: s.goalAssists ?? 0,
+            kurtaris: s.saves ?? 0,
+          });
+        }
+        biten++;
+        $("yuklemeSayac").textContent = `(${biten}/${takimlar.length} takım)`;
+      }
+
+      $("oyuncuListesi").innerHTML = [...new Set(tumOyuncular.map(o => o.isim))]
+        .sort((a, b) => a.localeCompare(b, "tr"))
+        .map(isim => `<option value="${isim}">`).join("");
+    }
+
+    // Seçilen seviyeye göre sorulabilecek oyuncuları ayıkla
+    function adaylariSec(seviyeKodu) {
+      const sev = SEVIYELER[seviyeKodu];
+      const enCokMac = Math.max(...tumOyuncular.map(o => o.mac));
+      const enAzMac = Math.max(EN_AZ_MAC, Math.ceil(enCokMac * sev.macOrani));
+      const buyukler = sev.buyukler ? BUYUK_KULUPLER[tumOyuncular.ligKodu] : null;
+      let liste = tumOyuncular.filter(o => {
+        if (o.mac < enAzMac) return false;
+        if (buyukler) return buyukler.includes(o.takimId);
+        return sev.ilkSira === 0 || o.takimSirasi <= sev.ilkSira;
+      });
+      // Sezon başıysa yeterli oyuncu çıkmayabilir: o zaman kuralı gevşet
+      if (liste.length < TUR_SAYISI) liste = tumOyuncular.filter(o => o.mac >= 1);
+      return liste;
+    }
+
+    // ============================================================
+    // 2) İPUÇLARI: seçilen oyuncu için 5 ipucu hazırla
+    // ============================================================
+    function ipuclariniHazirla(o) {
+      const sezon = o.mevki === "Kaleci"
+        ? `${o.mac} maç, ${o.kurtaris} kurtarış`
+        : `${o.mac} maç, ${o.gol} gol, ${o.asist} asist`;
+      return [
+        { baslik: "Mevki ve yaş", icerik: `${o.mevki}, ${o.yas ?? "?"} yaşında` },
+        { baslik: "Uyruk", icerik: `${o.bayrak ? `<img src="${o.bayrak}" alt="">` : ""}${o.uyruk}` },
+        { baslik: "Bu sezon (lig)", icerik: sezon },
+        { baslik: "Forma numarası", icerik: o.forma ? `#${o.forma}` : "Bilinmiyor" },
+        { baslik: "Takımı", icerik: `${o.logo ? `<img src="${o.logo}" alt="">` : ""}${o.takim}` },
+      ];
+    }
+
+    function ipuclariniCiz() {
+      const ipuclari = ipuclariniHazirla(cevap);
+      $("ipuclari").innerHTML = ipuclari.map((ip, i) => {
+        const acik = i <= acikIpucu;
+        return `
+          <div class="ipucu ${acik ? "acik" : ""}">
+            <div class="no">${i + 1}</div>
+            <div>
+              <div class="baslik">${ip.baslik}</div>
+              <div class="icerik">${acik ? ip.icerik : "🔒"}</div>
+            </div>
+            <div class="puan">${PUANLAR[i]} puan</div>
+          </div>`;
+      }).join("");
+    }
+
+    // ============================================================
+    // 3) OYUN AKIŞI
+    // ============================================================
+    function yeniTur() {
+      tur++;
+      acikIpucu = 0;
+      // Daha önce sorulmamış rastgele bir oyuncu seç
+      const sorulanlar = gecmis.map(g => g.isim);
+      const kalanlar = adaylar.filter(o => !sorulanlar.includes(o.isim));
+      cevap = kalanlar[Math.floor(Math.random() * kalanlar.length)];
+
+      $("turYazi").textContent = `${tur}/${TUR_SAYISI}`;
+      $("puanYazi").textContent = puan;
+      $("mesaj").textContent = "";
+      $("mesaj").className = "mesaj";
+      $("tahminKutusu").value = "";
+      $("tahminKutusu").disabled = false;
+      $("tahminBtn").disabled = false;
+      $("pasBtn").disabled = false;
+      $("sonrakiBtn").classList.add("gizli");
+      ipuclariniCiz();
+      $("tahminKutusu").focus();
+    }
+
+    function turuBitir(kazanilan, mesaj, dogruMu) {
+      puan += kazanilan;
+      gecmis.push({ isim: cevap.isim, takim: cevap.takim, kazanilan });
+      acikIpucu = 4;          // tüm ipuçlarını göster
+      ipuclariniCiz();
+      $("puanYazi").textContent = puan;
+      $("mesaj").textContent = mesaj;
+      $("mesaj").className = "mesaj " + (dogruMu ? "dogru" : "yanlis");
+      $("tahminKutusu").disabled = true;
+      $("tahminBtn").disabled = true;
+      $("pasBtn").disabled = true;
+      $("sonrakiBtn").textContent = tur < TUR_SAYISI ? "Sonraki Tur ▶" : "Sonucu Gör 🏁";
+      $("sonrakiBtn").classList.remove("gizli");
+      $("sonrakiBtn").focus();
+    }
+
+    function tahminEt() {
+      const tahmin = sadelestir($("tahminKutusu").value);
+      if (!tahmin) return;
+
+      const tamAd = sadelestir(cevap.isim);
+      const soyad = tamAd.split(" ").slice(-1)[0];
+      const dogru = tahmin === tamAd || (tahmin === soyad && soyad.length > 2);
+
+      if (dogru) {
+        const kazanilan = PUANLAR[acikIpucu];
+        turuBitir(kazanilan, `✅ Doğru! ${cevap.isim} (+${kazanilan} puan)`, true);
+      } else if (acikIpucu < 4) {
+        acikIpucu++;
+        ipuclariniCiz();
+        $("mesaj").textContent = "❌ Yanlış, yeni ipucu açıldı.";
+        $("mesaj").className = "mesaj yanlis";
+        $("tahminKutusu").value = "";
+        $("tahminKutusu").focus();
+      } else {
+        turuBitir(0, `❌ Bilemedin. Doğru cevap: ${cevap.isim}`, false);
+      }
+    }
+
+    function pasGec() {
+      if (acikIpucu < 4) {
+        acikIpucu++;
+        ipuclariniCiz();
+        $("mesaj").textContent = "Yeni ipucu açıldı.";
+        $("mesaj").className = "mesaj";
+      } else {
+        turuBitir(0, `Doğru cevap: ${cevap.isim}`, false);
+      }
+    }
+
+    function oyunuBitir() {
+      ekranGoster("ekranSonuc");
+      $("toplamPuan").textContent = puan;
+      const rekor = rekoruOku();
+      const seviyeAdi = SEVIYELER[$("seviyeSec").value].ad;
+      if (puan > rekor) {
+        rekoruYaz(puan);
+        $("rekorMesaj").textContent = `🏆 ${seviyeAdi} seviyede yeni rekor!`;
+      } else {
+        $("rekorMesaj").textContent = `${seviyeAdi} seviyedeki rekorun: ${rekor}`;
+      }
+      $("gecmis").innerHTML = gecmis
+        .map(g => `<li>${g.isim} <span style="color:var(--soluk)">(${g.takim})</span>: <b>${g.kazanilan}</b></li>`)
+        .join("");
+    }
+
+    async function oyunaBasla() {
+      const lig = $("ligSec").value;
+      try {
+        // Lig değişmediyse oyuncuları tekrar indirmeye gerek yok
+        if (tumOyuncular.ligKodu !== lig) {
+          ekranGoster("ekranYukleniyor");
+          $("yuklemeSayac").textContent = "";
+          await ligiYukle(lig);
+          tumOyuncular.ligKodu = lig;
+        }
+        adaylar = adaylariSec($("seviyeSec").value);
+        tur = 0; puan = 0; gecmis = [];
+        $("seviyeYazi").textContent = SEVIYELER[$("seviyeSec").value].ad;
+        ekranGoster("ekranOyun");
+        yeniTur();
+      } catch (e) {
+        ekranGoster("ekranBaslangic");
+        alert(location.protocol === "file:"
+          ? "Bu sayfayı BASLAT.bat ile açmalısın."
+          : "Veriler alınamadı: " + e.message);
+      }
+    }
+
+    // ============================================================
+    // 4) BUTONLAR
+    // ============================================================
+    $("ligSec").innerHTML = LIGLER.map(l => `<option value="${l.kod}">${l.ad}</option>`).join("");
+    $("seviyeSec").innerHTML = Object.entries(SEVIYELER)
+      .map(([kod, s]) => `<option value="${kod}">${s.ad}</option>`).join("");
+    $("seviyeSec").addEventListener("change", baslangicYazilariniGuncelle);
+    baslangicYazilariniGuncelle();
+
+    $("baslatBtn").addEventListener("click", oyunaBasla);
+    $("tekrarBtn").addEventListener("click", () => {
+      ekranGoster("ekranBaslangic");
+      baslangicYazilariniGuncelle();
+    });
+    $("tahminBtn").addEventListener("click", tahminEt);
+    $("tahminKutusu").addEventListener("keydown", e => { if (e.key === "Enter") tahminEt(); });
+    $("pasBtn").addEventListener("click", pasGec);
+    $("sonrakiBtn").addEventListener("click", () => tur < TUR_SAYISI ? yeniTur() : oyunuBitir());
+  </script>
+</body>
+</html>

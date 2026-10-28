@@ -1,0 +1,8 @@
+# GitHub'a yüklenmeyecek dosyalar (Yunus için not: buradaki dosyalar sadece bilgisayarında kalır)
+
+# Claude'un bu bilgisayara özel ayarları
+.claude/settings.local.json
+
+# Windows'un kendi oluşturduğu gereksiz dosyalar
+Thumbs.db
+desktop.ini

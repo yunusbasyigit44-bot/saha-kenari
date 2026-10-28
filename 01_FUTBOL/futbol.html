@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Futbol İstatistikleri</title>
+
+  <!--
+    ============================================================
+    BU DOSYA NASIL ÇALIŞIR? (Yunus için not)
+    ------------------------------------------------------------
+    Bu sayfa verileri ARTIK KENDİSİ YAZMIYOR. Her açıldığında
+    ESPN'in internetteki ücretsiz veri servisine "bana bu ligin
+    puan durumunu ve bu takımın oyuncularını ver" diye soruyor.
+    Bu tarz servislere "API" denir.
+    Sayfa açık kaldıkça her 10 dakikada bir kendini yeniliyor.
+
+    Lig eklemek istersen: aşağıdaki "LİGLER" listesine bir satır ekle.
+    ============================================================
+  -->
+
+  <style>
+    :root {
+      --takim: #a90432;        /* seçilen takımın rengi (JavaScript değiştiriyor) */
+      --takim2: #fdb912;       /* takımın ikinci rengi */
+      --arkaplan: #f4f2ee;
+      --kart: #ffffff;
+      --yazi: #1f1a17;
+      --soluk: #6b625c;
+      --cizgi: #e6dfd6;
+      --vurgu-satir: #fff4d6;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: var(--arkaplan);
+      color: var(--yazi);
+    }
+
+    /* ---------- ÜST MENÜ ---------- */
+    nav { background: #1f1a17; padding: 8px 16px; }
+    nav .ic { max-width: 1100px; margin: 0 auto; display: flex; gap: 16px; }
+    nav a { color: #d9d2cb; text-decoration: none; font-size: 14px; }
+    nav a.aktif { color: white; font-weight: 700; }
+
+    /* ---------- ÜST BAŞLIK ---------- */
+    header {
+      background: linear-gradient(135deg, var(--takim) 0%, var(--takim) 65%, var(--takim2) 65%);
+      color: white;
+      padding: 24px 16px;
+      transition: background 0.4s;
+    }
+    header .ic {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    header img {
+      width: 72px; height: 72px;
+      background: white;
+      border-radius: 50%;
+      padding: 8px;
+      object-fit: contain;
+    }
+    header h1 { margin: 0; font-size: 30px; }
+    header p { margin: 4px 0 0; opacity: 0.9; font-size: 14px; }
+
+    main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 48px; }
+
+    /* ---------- SEÇİM KUTULARI ---------- */
+    .secimler {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: end;
+      background: var(--kart);
+      padding: 14px;
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .secimler label { display: flex; flex-direction: column; font-size: 13px; color: var(--soluk); gap: 4px; }
+    select {
+      font-size: 15px;
+      padding: 8px 10px;
+      border: 1px solid var(--cizgi);
+      border-radius: 6px;
+      min-width: 220px;
+      background: white;
+    }
+    button {
+      font-size: 14px;
+      padding: 9px 14px;
+      border: none;
+      border-radius: 6px;
+      background: var(--takim);
+      color: white;
+      cursor: pointer;
+    }
+    .durum { font-size: 13px; color: var(--soluk); margin-left: auto; }
+
+    h2 { font-size: 20px; margin: 28px 0 12px; }
+
+    /* ---------- İKİ SÜTUN: puan durumu + oyuncular ---------- */
+    .duzen { display: grid; grid-template-columns: 1fr; gap: 0 24px; }
+    @media (min-width: 900px) { .duzen { grid-template-columns: 380px 1fr; } }
+
+    /* ---------- ÖZET KUTULARI ---------- */
+    .kutular { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+    .kutu {
+      background: var(--kart);
+      border-radius: 10px;
+      padding: 14px;
+      border-top: 4px solid var(--takim);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .kutu .etiket { font-size: 13px; color: var(--soluk); }
+    .kutu .deger { font-size: 28px; font-weight: 700; margin-top: 4px; }
+    .kutu .alt { font-size: 13px; color: var(--soluk); margin-top: 2px; }
+
+    /* ---------- GOL GRAFİĞİ ---------- */
+    .grafik { background: var(--kart); border-radius: 10px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .satir { display: grid; grid-template-columns: 150px 1fr 28px; align-items: center; gap: 10px; margin: 7px 0; font-size: 14px; }
+    .cubuk-zemin { background: var(--cizgi); border-radius: 4px; height: 16px; }
+    .cubuk { background: var(--takim); height: 100%; border-radius: 4px; }
+    .satir .sayi { font-weight: 700; text-align: right; }
+
+    /* ---------- TABLOLAR ---------- */
+    .tablo-kap { overflow-x: auto; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    table { width: 100%; border-collapse: collapse; background: var(--kart); font-size: 14px; }
+    th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--cizgi); white-space: nowrap; }
+    th { background: var(--takim); color: white; font-weight: 600; }
+    th.siralanir { cursor: pointer; user-select: none; }
+    td.sayi, th.sayi { text-align: right; }
+    tr:last-child td { border-bottom: none; }
+    tr.secili td { background: var(--vurgu-satir); font-weight: 700; }
+    #puanTablosu tr { cursor: pointer; }
+    #puanTablosu tr:hover td { background: #faf7f2; }
+    .mini-logo { width: 18px; height: 18px; vertical-align: middle; margin-right: 6px; object-fit: contain; }
+    .ipucu { font-size: 13px; color: var(--soluk); margin-top: 8px; }
+    .hata { background: #fde8e8; border-left: 4px solid #c0392b; padding: 10px 14px; border-radius: 6px; margin-top: 16px; display: none; }
+
+    @media (max-width: 520px) {
+      header h1 { font-size: 24px; }
+      header img { width: 56px; height: 56px; }
+      select { min-width: 0; width: 100%; }
+      .secimler label { flex: 1 1 100%; }
+      .satir { grid-template-columns: 100px 1fr 26px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="ic">
+      <a href="futbol.html" class="aktif">📊 İstatistikler</a>
+      <a href="oyun.html">🎯 İpucu Avı</a>
+    </div>
+  </nav>
+
+  <header>
+    <div class="ic">
+      <img id="logo" alt="">
+      <div>
+        <h1 id="takimAdi">Yükleniyor…</h1>
+        <p id="ligAdi"></p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="secimler">
+      <label>Lig
+        <select id="ligSec"></select>
+      </label>
+      <label>Takım
+        <select id="takimSec"></select>
+      </label>
+      <button id="yenile">↻ Şimdi yenile</button>
+      <span class="durum" id="durum"></span>
+    </div>
+    <div class="hata" id="hata"></div>
+
+    <div class="duzen">
+      <section>
+        <h2>Puan Durumu</h2>
+        <div class="tablo-kap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Takım</th><th class="sayi">O</th><th class="sayi">AV</th><th class="sayi">P</th></tr>
+            </thead>
+            <tbody id="puanTablosu"></tbody>
+          </table>
+        </div>
+        <p class="ipucu">💡 Bir takıma tıklarsan onun sayfası açılır.</p>
+      </section>
+
+      <section>
+        <h2>Takım Özeti</h2>
+        <div class="kutular" id="ozet"></div>
+
+        <h2>Gol Krallığı</h2>
+        <div class="grafik" id="grafik"></div>
+      </section>
+    </div>
+
+    <h2>Tüm Oyuncular</h2>
+    <div class="tablo-kap">
+      <table>
+        <thead>
+          <tr>
+            <th class="siralanir" data-alan="isim">Oyuncu</th>
+            <th class="siralanir" data-alan="mevki">Mevki</th>
+            <th class="siralanir" data-alan="uyruk">Uyruk</th>
+            <th class="siralanir sayi" data-alan="yas">Yaş</th>
+            <th class="siralanir sayi" data-alan="mac">Maç</th>
+            <th class="siralanir sayi" data-alan="gol">Gol</th>
+            <th class="siralanir sayi" data-alan="asist">Asist</th>
+            <th class="siralanir sayi" data-alan="sut">Şut</th>
+            <th class="siralanir sayi" data-alan="sari">🟨</th>
+            <th class="siralanir sayi" data-alan="kirmizi">🟥</th>
+          </tr>
+        </thead>
+        <tbody id="oyuncuTablosu"></tbody>
+      </table>
+    </div>
+    <p class="ipucu">💡 Sütun başlığına tıklarsan tablo o sütuna göre sıralanır. Veri kaynağı: ESPN.</p>
+  </main>
+
+  <script>
+    // ============================================================
+    // LİGLER  (kod: ESPN'in lig kodu, ad: sayfada görünen isim)
+    // ============================================================
+    const LIGLER = [
+      { kod: "tur.1", ad: "🇹🇷 Trendyol Süper Lig" },
+      { kod: "eng.1", ad: "🏴 Premier League" },
+      { kod: "esp.1", ad: "🇪🇸 LaLiga" },
+      { kod: "ita.1", ad: "🇮🇹 Serie A" },
+      { kod: "ger.1", ad: "🇩🇪 Bundesliga" },
+      { kod: "fra.1", ad: "🇫🇷 Ligue 1" },
+      { kod: "por.1", ad: "🇵🇹 Liga Portugal" },
+      { kod: "ned.1", ad: "🇳🇱 Eredivisie" },
+      { kod: "ksa.1", ad: "🇸🇦 Saudi Pro League" },
+      { kod: "usa.1", ad: "🇺🇸 MLS" },
+    ];
+
+    // Veriler sunucu.ps1 üzerinden ESPN'den geliyor (sayfayı BASLAT.bat ile aç)
+    const API = "/espn/apis";
+    const YENILEME_DAKIKA = 10;   // sayfa kaç dakikada bir kendini güncellesin
+
+    // Açılışta gösterilecek: Süper Lig / Galatasaray (ESPN'de Galatasaray'ın numarası 432)
+    let secilenLig = "tur.1";
+    let secilenTakim = "432";
+    try {
+      // Son baktığın lig ve takımı hatırla
+      secilenLig = localStorage.getItem("lig") || secilenLig;
+      secilenTakim = localStorage.getItem("takim") || secilenTakim;
+    } catch (e) {}
+
+    let takimlar = [];    // seçili ligdeki takımlar
+    let oyuncular = [];   // seçili takımın oyuncuları
+
+    const MEVKI = { G: "Kaleci", D: "Defans", M: "Orta Saha", F: "Forvet" };
+
+    // ---------- Yardımcı: internetten veri çek ----------
+    async function veriCek(adres) {
+      const cevap = await fetch(adres);
+      if (!cevap.ok) throw new Error("Sunucu cevap vermedi (" + cevap.status + ")");
+      return cevap.json();
+    }
+
+    function hataGoster(mesaj) {
+      const kutu = document.getElementById("hata");
+      kutu.textContent = mesaj ? "⚠️ " + mesaj : "";
+      kutu.style.display = mesaj ? "block" : "none";
+    }
+
+    // ---------- 1) LİG SEÇİLİNCE: takımları + puan durumunu getir ----------
+    async function ligYukle() {
+      const lig = LIGLER.find(l => l.kod === secilenLig) || LIGLER[0];
+      secilenLig = lig.kod;
+
+      const [takimVerisi, puanVerisi] = await Promise.all([
+        veriCek(`${API}/site/v2/sports/soccer/${lig.kod}/teams`),
+        veriCek(`${API}/v2/sports/soccer/${lig.kod}/standings`),
+      ]);
+
+      takimlar = takimVerisi.sports[0].leagues[0].teams
+        .map(t => t.team)
+        .sort((a, b) => a.displayName.localeCompare(b.displayName, "tr"));
+
+      // Seçili takım bu ligde yoksa ligin ilk takımını seç
+      if (!takimlar.some(t => t.id === secilenTakim)) secilenTakim = takimlar[0].id;
+
+      document.getElementById("takimSec").innerHTML = takimlar
+        .map(t => `<option value="${t.id}">${t.displayName}</option>`).join("");
+      document.getElementById("takimSec").value = secilenTakim;
+
+      // Puan durumu
+      const grup = puanVerisi.children ? puanVerisi.children[0] : puanVerisi;
+      const sezonAdi = grup.standings?.seasonDisplayName || grup.name || lig.ad;
+      document.getElementById("ligAdi").textContent = sezonAdi;
+
+      const satirlar = (grup.standings?.entries || []).map(e => {
+        const s = {};
+        for (const st of e.stats) s[st.name] = st.value;
+        return {
+          id: e.team.id,
+          ad: e.team.shortDisplayName || e.team.displayName,
+          logo: e.team.logos?.[0]?.href || "",
+          sira: s.rank,
+          oynanan: s.gamesPlayed ?? 0,
+          averaj: s.pointDifferential ?? 0,
+          puan: s.points ?? 0,
+        };
+      });
+      satirlar.sort((a, b) => (a.sira && b.sira) ? a.sira - b.sira : (b.puan - a.puan) || (b.averaj - a.averaj));
+      puanDurumunuCiz(satirlar);
+    }
+
+    function puanDurumunuCiz(satirlar) {
+      document.getElementById("puanTablosu").innerHTML = satirlar.map((t, i) => `
+        <tr data-id="${t.id}" class="${t.id === secilenTakim ? "secili" : ""}">
+          <td>${i + 1}</td>
+          <td>${t.logo ? `<img class="mini-logo" src="${t.logo}" alt="">` : ""}${t.ad}</td>
+          <td class="sayi">${t.oynanan}</td>
+          <td class="sayi">${t.averaj > 0 ? "+" : ""}${t.averaj}</td>
+          <td class="sayi"><b>${t.puan}</b></td>
+        </tr>`).join("");
+    }
+
+    // ---------- 2) TAKIM SEÇİLİNCE: oyuncuları getir ----------
+    async function takimYukle() {
+      const takim = takimlar.find(t => t.id === secilenTakim);
+      const veri = await veriCek(`${API}/site/v2/sports/soccer/${secilenLig}/teams/${secilenTakim}/roster`);
+
+      // Başlık, logo ve renkler takıma göre değişsin
+      document.getElementById("takimAdi").textContent = takim.displayName;
+      document.getElementById("logo").src = takim.logos?.[0]?.href || "";
+      document.documentElement.style.setProperty("--takim", "#" + (takim.color || "333333"));
+      const ikinci = takim.alternateColor && takim.alternateColor !== takim.color ? takim.alternateColor : "999999";
+      document.documentElement.style.setProperty("--takim2", "#" + ikinci);
+
+      // Puan tablosunda seçili takımı vurgula
+      for (const tr of document.querySelectorAll("#puanTablosu tr")) {
+        tr.classList.toggle("secili", tr.dataset.id === secilenTakim);
+      }
+
+      // ESPN'in karışık verisini sade bir listeye çevir
+      oyuncular = (veri.athletes || []).map(a => {
+        const s = {};
+        for (const kat of a.statistics?.splits?.categories || []) {
+          for (const st of kat.stats) s[st.name] = st.value;
+        }
+        return {
+          isim: a.displayName,
+          mevki: MEVKI[a.position?.abbreviation] || a.position?.displayName || "-",
+          uyruk: a.citizenship || "-",
+          yas: a.age ?? 0,
+          mac: s.appearances ?? 0,
+          gol: s.totalGoals ?? 0,
+          asist: s.goalAssists ?? 0,
+          sut: s.totalShots ?? 0,
+          sari: s.yellowCards ?? 0,
+          kirmizi: s.redCards ?? 0,
+        };
+      });
+
+      ozetiCiz();
+      grafigiCiz();
+      oyuncuTablosunuCiz([...oyuncular].sort((a, b) => b.mac - a.mac));
+    }
+
+    function ozetiCiz() {
+      let toplamGol = 0, toplamAsist = 0;
+      for (const o of oyuncular) { toplamGol += o.gol; toplamAsist += o.asist; }
+      const golcu = [...oyuncular].sort((a, b) => b.gol - a.gol)[0];
+      const asistci = [...oyuncular].sort((a, b) => b.asist - a.asist)[0];
+
+      document.getElementById("ozet").innerHTML = `
+        <div class="kutu"><div class="etiket">Toplam Gol</div><div class="deger">${toplamGol}</div></div>
+        <div class="kutu"><div class="etiket">Toplam Asist</div><div class="deger">${toplamAsist}</div></div>
+        <div class="kutu"><div class="etiket">Gol Kralı</div><div class="deger">${golcu?.gol ?? 0}</div><div class="alt">${golcu?.gol ? golcu.isim : "-"}</div></div>
+        <div class="kutu"><div class="etiket">Asist Kralı</div><div class="deger">${asistci?.asist ?? 0}</div><div class="alt">${asistci?.asist ? asistci.isim : "-"}</div></div>
+      `;
+    }
+
+    function grafigiCiz() {
+      const golAtanlar = oyuncular.filter(o => o.gol > 0).sort((a, b) => b.gol - a.gol).slice(0, 10);
+      if (golAtanlar.length === 0) {
+        document.getElementById("grafik").innerHTML = `<p class="ipucu">Bu sezon henüz gol atan oyuncu yok.</p>`;
+        return;
+      }
+      const enYuksek = golAtanlar[0].gol;
+      document.getElementById("grafik").innerHTML = golAtanlar.map(o => `
+        <div class="satir">
+          <span>${o.isim}</span>
+          <div class="cubuk-zemin"><div class="cubuk" style="width:${(o.gol / enYuksek) * 100}%"></div></div>
+          <span class="sayi">${o.gol}</span>
+        </div>`).join("");
+    }
+
+    function oyuncuTablosunuCiz(liste) {
+      document.getElementById("oyuncuTablosu").innerHTML = liste.map(o => `
+        <tr>
+          <td>${o.isim}</td>
+          <td>${o.mevki}</td>
+          <td>${o.uyruk}</td>
+          <td class="sayi">${o.yas || "-"}</td>
+          <td class="sayi">${o.mac}</td>
+          <td class="sayi">${o.gol}</td>
+          <td class="sayi">${o.asist}</td>
+          <td class="sayi">${o.sut}</td>
+          <td class="sayi">${o.sari}</td>
+          <td class="sayi">${o.kirmizi}</td>
+        </tr>`).join("");
+    }
+
+    // ---------- 3) HER ŞEYİ YÜKLE (açılışta ve her yenilemede) ----------
+    async function hepsiniYukle(ligDegisti = true) {
+      const durum = document.getElementById("durum");
+      durum.textContent = "Güncelleniyor…";
+      hataGoster("");
+      try {
+        if (ligDegisti) await ligYukle();
+        await takimYukle();
+        try {
+          localStorage.setItem("lig", secilenLig);
+          localStorage.setItem("takim", secilenTakim);
+        } catch (e) {}
+        durum.textContent = "Son güncelleme: " + new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+      } catch (e) {
+        durum.textContent = "";
+        hataGoster(location.protocol === "file:"
+          ? "Bu sayfayı doğrudan açtın. Lütfen klasördeki BASLAT.bat dosyasına çift tıklayarak aç."
+          : "Veriler alınamadı. İnternet bağlantını kontrol edip “Şimdi yenile”ye bas. (" + e.message + ")");
+      }
+    }
+
+    // ---------- 4) TIKLAMALAR ----------
+    document.getElementById("ligSec").innerHTML = LIGLER.map(l => `<option value="${l.kod}">${l.ad}</option>`).join("");
+    document.getElementById("ligSec").value = secilenLig;
+
+    document.getElementById("ligSec").addEventListener("change", e => {
+      secilenLig = e.target.value;
+      hepsiniYukle(true);
+    });
+    document.getElementById("takimSec").addEventListener("change", e => {
+      secilenTakim = e.target.value;
+      hepsiniYukle(false);
+    });
+    document.getElementById("puanTablosu").addEventListener("click", e => {
+      const satir = e.target.closest("tr");
+      if (!satir) return;
+      secilenTakim = satir.dataset.id;
+      document.getElementById("takimSec").value = secilenTakim;
+      hepsiniYukle(false);
+    });
+    document.getElementById("yenile").addEventListener("click", () => hepsiniYukle(true));
+
+    for (const baslik of document.querySelectorAll("th.siralanir")) {
+      baslik.addEventListener("click", () => {
+        const alan = baslik.dataset.alan;
+        const sirali = [...oyuncular].sort((a, b) =>
+          typeof a[alan] === "number" ? b[alan] - a[alan] : String(a[alan]).localeCompare(String(b[alan]), "tr")
+        );
+        oyuncuTablosunuCiz(sirali);
+      });
+    }
+
+    // Açılışta yükle, sonra her 10 dakikada bir kendini güncelle
+    hepsiniYukle(true);
+    setInterval(() => hepsiniYukle(true), YENILEME_DAKIKA * 60 * 1000);
+  </script>
+</body>
+</html>

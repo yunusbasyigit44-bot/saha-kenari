@@ -1,0 +1,44 @@
+# ============================================================
+# GÜNLÜK VERİ GÜNCELLEME (Yunus için not)
+# ------------------------------------------------------------
+# GitHub her sabah bu dosyadaki adımları kendi bilgisayarında çalıştırır:
+#   1) Projeyi indirir
+#   2) veri_guncelle.ps1 ile ESPN'den güncel verileri çeker (kalite kontrol dahil)
+#   3) Değişen veriyi projeye kaydeder (commit) ve yükler (push)
+# Senin bilgisayarının açık olması gerekmez.
+# Elle çalıştırmak için: GitHub > repo > Actions > "Günlük veri güncelleme" > Run workflow
+# ============================================================
+
+name: Günlük veri güncelleme
+
+on:
+  schedule:
+    - cron: "0 4 * * *"     # her gün 04:00 UTC = Türkiye saatiyle 07:00
+  workflow_dispatch:         # elle başlatma butonu
+
+permissions:
+  contents: write            # veriyi repoya geri kaydedebilmesi için
+
+jobs:
+  guncelle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Projeyi indir
+        uses: actions/checkout@v4
+
+      - name: ESPN'den verileri indir
+        shell: pwsh
+        run: ./01_FUTBOL/paylasim/veri_guncelle.ps1
+
+      - name: Değişiklik varsa kaydet ve yükle
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 01_FUTBOL/paylasim/data.json 01_FUTBOL/paylasim/gorseller.json
+          if git diff --cached --quiet; then
+            echo "Veride değişiklik yok."
+          else
+            git commit -m "Veriler güncellendi: $(date -u +'%Y-%m-%d')"
+            git push
+          fi

@@ -115,6 +115,18 @@ $veri = [ordered]@{
 }
 $gorseller = [ordered]@{ logo = $logolar; bayrak = $bayraklar }
 
+# KALİTE KONTROL (poka-yoke): veri eksik geldiyse dosyalara HİÇ dokunma, eski veri kalsın
+$sorunlar = @()
+if ($ligListesi.Count -ne $LIGLER.Count) { $sorunlar += "Beklenen $($LIGLER.Count) lig, gelen $($ligListesi.Count)" }
+foreach ($l in $ligListesi) {
+    if ($l.oyuncular.Count -lt 200) { $sorunlar += "$($l.ad): sadece $($l.oyuncular.Count) oyuncu geldi" }
+    if ($l.puan.Count -lt 10) { $sorunlar += "$($l.ad): puan durumunda sadece $($l.puan.Count) takim var" }
+}
+if ($sorunlar.Count -gt 0) {
+    $sorunlar | ForEach-Object { Write-Host "HATA: $_" -ForegroundColor Red }
+    throw "Kalite kontrolden gecemedi, veriler kaydedilmedi."
+}
+
 # BOM'suz UTF-8 olarak yaz (Türkçe karakterler bozulmasın)
 $utf8 = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText((Join-Path $klasor "data.json"), ($veri | ConvertTo-Json -Depth 8 -Compress), $utf8)

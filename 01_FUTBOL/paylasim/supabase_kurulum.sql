@@ -71,3 +71,17 @@ create policy "herkes ekleyebilir" on public.skorlar
 
 -- Değiştirme ve silme kuralı YOK: yani kimse yapamaz
 grant select, insert on public.skorlar to anon, authenticated;
+
+-- ------------------------------------------------------------
+-- EK 1 (28 Ekim 2026): Bayrak Turu oyunu eklendi
+-- ------------------------------------------------------------
+alter table public.skorlar drop constraint if exists skorlar_oyun_check;
+alter table public.skorlar add constraint skorlar_oyun_check
+  check (oyun in ('ipucu', 'gizli', 'seri', 'gunluk', 'bayrak'));
+alter table public.skorlar drop constraint if exists puan_siniri;
+alter table public.skorlar add constraint puan_siniri check (
+     (oyun in ('ipucu', 'gizli') and puan <= 500)
+  or (oyun = 'seri'   and puan <= 300)
+  or (oyun = 'gunluk' and puan between 1 and 5 and gun is not null)
+  or (oyun = 'bayrak' and puan between 1 and 30)
+);

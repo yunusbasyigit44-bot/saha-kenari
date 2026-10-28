@@ -222,6 +222,18 @@
   .gb-istatistik span { font-size: 12px; color: var(--soluk); }
   .gb-tahminler { list-style: none; padding: 0; margin: 10px 0 0; font-size: 14px; color: var(--soluk); }
 
+  /* ---------- BAYRAK TURU ---------- */
+  .bt-hedef { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .bt-hedef img { width: 56px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid var(--cizgi); flex: none; }
+  .bt-hedef .soru { text-align: left; margin: 0; font-size: 22px; }
+  .bt-ust { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; color: var(--soluk); }
+  .bt-ust b { font-family: var(--font-baslik); font-size: 28px; color: var(--yazi); font-variant-numeric: tabular-nums; }
+  .bt-sure.az b { color: var(--yanlis); }
+  .bt-liste { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; padding: 0; list-style: none; }
+  .bt-liste li { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; font-size: 14px; background: var(--zemin); border: 1px solid var(--cizgi); }
+  .bt-liste li.bulundu { border-color: var(--dogru); }
+  .bt-liste li.kacti { color: var(--soluk); border-style: dashed; }
+
   /* ---------- LİDERLİK ---------- */
   .skor-formu { margin: 16px auto 0; max-width: 420px; padding-top: 14px; border-top: 1px solid var(--cizgi); text-align: center; }
   .skor-formu .satir-form { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
@@ -255,6 +267,7 @@
       <a href="#gizli" id="sekmeGizli">Gizli Takım</a>
       <a href="#seri" id="sekmeSeri">Seri Yakala</a>
       <a href="#gunluk" id="sekmeGunluk">Günün Bulmacası</a>
+      <a href="#bayrak" id="sekmeBayrak">Bayrak Turu</a>
       <a href="#liderlik" id="sekmeLiderlik">Liderlik</a>
     </nav>
   </div>
@@ -491,6 +504,51 @@
     </div>
   </section>
 
+  <!-- ===================== BAYRAK TURU ===================== -->
+  <section id="bolumBayrak" class="oyun" hidden>
+    <div id="btBaslangic" class="kart">
+      <h2 style="margin-top: 0;">Bayrak Turu</h2>
+      <ol class="kurallar">
+        <li>Bir lig ve bir ülke gelir: "Premier League'de oynayan Brezilyalılar" gibi.</li>
+        <li><b>60 saniyede</b> aklına gelen oyuncuları tek tek yaz, Enter'a bas. Soyadı yeter.</li>
+        <li>Her doğru isim 1 puan. Yanlış yazmanın cezası yok.</li>
+        <li>Süre bitince kaçırdığın oyuncular da gösterilir.</li>
+      </ol>
+      <div class="secimler">
+        <label>Lig <select id="btLigSec"></select></label>
+        <button id="btBaslatBtn">Oyuna Başla</button>
+      </div>
+      <p class="ipucu-yazi" id="btRekorYazi"></p>
+    </div>
+
+    <div id="btOyun" class="kart" hidden>
+      <div class="bt-hedef">
+        <img id="btBayrak" alt="">
+        <div class="soru" id="btSoru"></div>
+      </div>
+      <div class="bt-ust">
+        <span>Bulunan <b id="btSkor">0</b> / <span id="btToplam">0</span></span>
+        <span class="bt-sure" id="btSureKutu">Süre <b id="btSure">60</b></span>
+      </div>
+      <div class="tahmin">
+        <input id="btTahminKutusu" placeholder="Oyuncu adı yaz, Enter'a bas…" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <button id="btTahminBtn">Ekle</button>
+        <button id="btBitirBtn" class="ikincil">Bitir</button>
+      </div>
+      <div id="btMesaj" class="mesaj"></div>
+      <ul class="bt-liste" id="btBulunanlar"></ul>
+    </div>
+
+    <div id="btSonuc" class="kart sonuc" hidden>
+      <div id="btSonucBaslik">Bulduğun oyuncu</div>
+      <div class="buyuk" id="btToplamPuan">0</div>
+      <div id="btRekorMesaj"></div>
+      <ul class="bt-liste" id="btSonucListe" style="justify-content: center;"></ul>
+      <button id="btTekrarBtn" style="margin-top: 14px;">Tekrar Oyna</button>
+      <div class="skor-formu" id="btSkor"></div>
+    </div>
+  </section>
+
   <!-- ===================== LİDERLİK ===================== -->
   <section id="bolumLiderlik" hidden>
     <div class="secimler">
@@ -500,6 +558,7 @@
           <option value="gizli">Gizli Takım</option>
           <option value="seri">Seri Yakala</option>
           <option value="gunluk">Günün Bulmacası (bugün)</option>
+          <option value="bayrak">Bayrak Turu</option>
         </select>
       </label>
       <label id="ldLigEtiket">Lig <select id="ldLig"></select></label>
@@ -568,6 +627,7 @@
     { sekme: "sekmeGizli",      bolum: "bolumGizli",      hash: "#gizli" },
     { sekme: "sekmeSeri",       bolum: "bolumSeri",       hash: "#seri" },
     { sekme: "sekmeGunluk",     bolum: "bolumGunluk",     hash: "#gunluk" },
+    { sekme: "sekmeBayrak",     bolum: "bolumBayrak",     hash: "#bayrak" },
     { sekme: "sekmeLiderlik",   bolum: "bolumLiderlik",   hash: "#liderlik" },
   ];
   function sekmeGoster() {
@@ -1346,6 +1406,156 @@
   setInterval(gbGeriSayim, 30000);
 
   // ============================================================
+  // BAYRAK TURU
+  // Bir lig + bir ülke: 60 saniyede o ülkeden oyuncuları say.
+  // ============================================================
+  // ESPN ülke adlarını İngilizce veriyor; sık geçenleri Türkçeleştiriyoruz
+  const ULKE_TR = {
+    "Argentina": "Arjantin", "Belgium": "Belçika", "Brazil": "Brezilya", "Cameroon": "Kamerun", "Canada": "Kanada",
+    "Colombia": "Kolombiya", "Croatia": "Hırvatistan", "Czechia": "Çekya", "Czech Republic": "Çekya", "Denmark": "Danimarka",
+    "Ecuador": "Ekvador", "Egypt": "Mısır", "England": "İngiltere", "France": "Fransa", "Germany": "Almanya", "Ghana": "Gana",
+    "Greece": "Yunanistan", "Hungary": "Macaristan", "Ireland": "İrlanda", "Republic of Ireland": "İrlanda", "Italy": "İtalya",
+    "Ivory Coast": "Fildişi Sahili", "Côte d'Ivoire": "Fildişi Sahili", "Jamaica": "Jamaika", "Japan": "Japonya",
+    "Mexico": "Meksika", "Morocco": "Fas", "Netherlands": "Hollanda", "Nigeria": "Nijerya", "Norway": "Norveç",
+    "Paraguay": "Paraguay", "Poland": "Polonya", "Portugal": "Portekiz", "Saudi Arabia": "Suudi Arabistan", "Scotland": "İskoçya",
+    "Senegal": "Senegal", "Serbia": "Sırbistan", "Slovakia": "Slovakya", "Slovenia": "Slovenya", "South Korea": "Güney Kore",
+    "Korea Republic": "Güney Kore", "Spain": "İspanya", "Sweden": "İsveç", "Switzerland": "İsviçre", "Türkiye": "Türkiye",
+    "Turkey": "Türkiye", "Ukraine": "Ukrayna", "United States": "ABD", "USA": "ABD", "Uruguay": "Uruguay", "Venezuela": "Venezuela",
+    "Wales": "Galler", "Algeria": "Cezayir", "Tunisia": "Tunus", "Mali": "Mali", "Austria": "Avusturya", "Albania": "Arnavutluk",
+    "Bosnia and Herzegovina": "Bosna-Hersek", "Georgia": "Gürcistan", "Kosovo": "Kosova", "Romania": "Romanya", "Russia": "Rusya",
+    "Chile": "Şili", "Peru": "Peru", "Australia": "Avustralya", "Cape Verde Islands": "Yeşil Burun Adaları", "Guinea": "Gine",
+    "Gambia": "Gambiya", "Congo": "Kongo", "Burkina Faso": "Burkina Faso", "Zambia": "Zambiya", "Montenegro": "Karadağ",
+    "North Macedonia": "Kuzey Makedonya", "Bulgaria": "Bulgaristan", "Israel": "İsrail", "Iran": "İran", "Northern Ireland": "Kuzey İrlanda",
+    "DR Congo": "Demokratik Kongo", "Congo DR": "Demokratik Kongo", "Gabon": "Gabon", "Finland": "Finlandiya", "Iceland": "İzlanda",
+  };
+  const ulkeAdi = u => ULKE_TR[u] || u;
+
+  const BT_SURE = 60;
+  const bt = { lig: null, hedef: [], bulunan: new Set(), ulke: "", uk: "", bitis: 0, zamanlayici: null };
+
+  function btEkrani(ad) {
+    for (const e of ["btBaslangic", "btOyun", "btSonuc"]) $(e).hidden = e !== ad;
+  }
+  const btRekorAnahtari = () => "btRekor_" + $("btLigSec").value;
+  const btRekoruOku = () => Number(hafizaOku(btRekorAnahtari(), 0)) || 0;
+  function btBaslangicYazilari() {
+    const r = btRekoruOku();
+    $("btRekorYazi").textContent = r ? `Bu ligdeki rekorun: ${r} oyuncu` : "";
+  }
+
+  // Ligde 4-25 oyuncusu olan ülkelerden birini seç (ev sahibi ülke hariç, çok kalabalık olur)
+  function btUlkeSec(lig) {
+    const gruplar = {};
+    for (const o of lig.oyuncular) {
+      if (!o.u || o.mac < 1) continue;
+      (gruplar[o.u] = gruplar[o.u] || []).push(o);
+    }
+    const sirali = Object.entries(gruplar).sort((a, b) => b[1].length - a[1].length);
+    const uygun = sirali.slice(1).filter(([, l]) => l.length >= 4 && l.length <= 25);
+    return uygun[Math.floor(Math.random() * uygun.length)];
+  }
+
+  function btListeCiz(kapId, liste, sinif) {
+    $(kapId).innerHTML = liste.map(o =>
+      `<li class="${sinif(o)}"><img class="logo" src="${logoUrl(o.t)}" alt="">${o.i}</li>`).join("");
+  }
+
+  function btSureGuncelle() {
+    const kalan = Math.max(0, Math.ceil((bt.bitis - Date.now()) / 1000));
+    $("btSure").textContent = kalan;
+    $("btSureKutu").classList.toggle("az", kalan <= 10);
+    if (kalan === 0) btBitir();
+  }
+
+  // Yazılanı hedef listedeki tek bir oyuncuyla eşleştir: tam ad ya da adın bir parçası (tek kişiye uyuyorsa)
+  function btEslestir(yazi) {
+    const t = sadelestir(yazi);
+    if (t.length < 3) return { durum: "kisa" };
+    const tam = bt.hedef.filter(o => sadelestir(o.i) === t);
+    // "Gannon-Doak" gibi tireli adlarda "gannon" da, "doak" da kabul edilsin
+    const parca = bt.hedef.filter(o => sadelestir(o.i).split(/[\s-]+/).includes(t) || sadelestir(o.i).split(" ").includes(t));
+    const adaylar = tam.length ? tam : parca;
+    if (adaylar.length === 0) return { durum: "yok" };
+    const kalan = adaylar.filter(o => !bt.bulunan.has(o));
+    if (kalan.length === 0) return { durum: "zaten" };
+    if (kalan.length > 1) return { durum: "belirsiz" };
+    return { durum: "tamam", oyuncu: kalan[0] };
+  }
+
+  function btTahmin() {
+    const kutu = $("btTahminKutusu");
+    if (!kutu.value.trim()) return;
+    const s = btEslestir(kutu.value);
+    const mesajlar = {
+      kisa: ["En az 3 harf yaz.", ""],
+      yok: ["Listede yok.", "yanlis"],
+      zaten: ["Onu zaten buldun.", ""],
+      belirsiz: ["Birden fazla oyuncuya uyuyor, tam adını yaz.", ""],
+    };
+    if (s.durum === "tamam") {
+      bt.bulunan.add(s.oyuncu);
+      $("btSkor").textContent = bt.bulunan.size;
+      $("btMesaj").textContent = `+1 ${s.oyuncu.i}`;
+      $("btMesaj").className = "mesaj dogru";
+      btListeCiz("btBulunanlar", [...bt.bulunan], () => "bulundu");
+      if (bt.bulunan.size === bt.hedef.length) btBitir();
+    } else {
+      $("btMesaj").textContent = mesajlar[s.durum][0];
+      $("btMesaj").className = "mesaj " + mesajlar[s.durum][1];
+    }
+    kutu.value = "";
+    kutu.focus();
+  }
+
+  function btBitir() {
+    if (!bt.zamanlayici) return;
+    clearInterval(bt.zamanlayici);
+    bt.zamanlayici = null;
+    btEkrani("btSonuc");
+    const puan = bt.bulunan.size;
+    $("btToplamPuan").textContent = `${puan} / ${bt.hedef.length}`;
+    $("btSonucBaslik").textContent = `${ulkeAdi(bt.ulke)} uyruklu bulduğun oyuncu`;
+    const rekor = btRekoruOku();
+    if (puan > rekor) { hafizaYaz(btRekorAnahtari(), puan); $("btRekorMesaj").textContent = "Yeni rekor!"; }
+    else $("btRekorMesaj").textContent = `Bu ligdeki rekorun: ${rekor}`;
+    // Önce bulunanlar, sonra kaçanlar
+    const sirali = [...bt.hedef].sort((a, b) => (bt.bulunan.has(b) - bt.bulunan.has(a)) || b.mac - a.mac);
+    btListeCiz("btSonucListe", sirali, o => bt.bulunan.has(o) ? "bulundu" : "kacti");
+    if (puan > 0) skorFormuKur("btSkor", { oyun: "bayrak", lig: bt.lig, puan });
+    else $("btSkor").innerHTML = "";
+  }
+
+  function btOyunaBasla() {
+    bt.lig = $("btLigSec").value;
+    const lig = ligBul(bt.lig);
+    const secim = btUlkeSec(lig);
+    if (!secim) { $("btRekorYazi").textContent = "Bu ligde uygun ülke bulunamadı, başka lig seç."; return; }
+    [bt.ulke, bt.hedef] = secim;
+    bt.uk = bt.hedef.find(o => o.uk)?.uk || "";
+    bt.bulunan = new Set();
+    $("btBayrak").src = bayrakUrl(bt.uk);
+    $("btSoru").innerHTML = `${ulkeAdi(bt.ulke)} uyruklu oyuncular<div class="ipucu-yazi" style="margin:2px 0 0;font-family:var(--font-govde);font-weight:400">${lig.ad}</div>`;
+    $("btSkor").textContent = "0";
+    $("btToplam").textContent = bt.hedef.length;
+    $("btMesaj").textContent = ""; $("btMesaj").className = "mesaj";
+    $("btBulunanlar").innerHTML = "";
+    $("btTahminKutusu").value = "";
+    btEkrani("btOyun");
+    bt.bitis = Date.now() + BT_SURE * 1000;
+    clearInterval(bt.zamanlayici);
+    bt.zamanlayici = setInterval(btSureGuncelle, 250);
+    btSureGuncelle();
+    $("btTahminKutusu").focus();
+  }
+
+  $("btLigSec").addEventListener("change", btBaslangicYazilari);
+  $("btBaslatBtn").addEventListener("click", btOyunaBasla);
+  $("btTahminBtn").addEventListener("click", btTahmin);
+  $("btTahminKutusu").addEventListener("keydown", e => { if (e.key === "Enter") btTahmin(); });
+  $("btBitirBtn").addEventListener("click", btBitir);
+  $("btTekrarBtn").addEventListener("click", () => { btEkrani("btBaslangic"); btBaslangicYazilari(); });
+
+  // ============================================================
   // LİDERLİK TABLOSU
   // Skorlar Supabase'deki "skorlar" tablosunda duruyor.
   // Bu anahtar herkese açık olacak şekilde tasarlandı; güvenliği
@@ -1354,7 +1564,7 @@
   const SUPABASE_URL = "https://xsskbnvpsjsuvjovehxc.supabase.co";
   const SUPABASE_ANAHTAR = "sb_publishable_vhq-lCqjhd4418JJmDI_4w_4CqfHv-X";
   const SKOR_API = SUPABASE_URL + "/rest/v1/skorlar";
-  const OYUN_ADLARI = { ipucu: "İpucu Avı", gizli: "Gizli Takım", seri: "Seri Yakala", gunluk: "Günün Bulmacası" };
+  const OYUN_ADLARI = { ipucu: "İpucu Avı", gizli: "Gizli Takım", seri: "Seri Yakala", gunluk: "Günün Bulmacası", bayrak: "Bayrak Turu" };
 
   // Kullanıcıların yazdığı takma adlar sayfaya HTML olarak girmesin diye
   const guvenli = yazi => String(yazi).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -1440,7 +1650,7 @@
       karisik.remove();
       if (secili === "hepsi") $("ldLig").value = "tur.1";
     }
-    $("ldPuanBaslik").textContent = oyun === "seri" ? "Seri" : oyun === "gunluk" ? "Tahmin" : "Puan";
+    $("ldPuanBaslik").textContent = oyun === "seri" ? "Seri" : oyun === "gunluk" ? "Tahmin" : oyun === "bayrak" ? "Bulunan" : "Puan";
   }
 
   let ldIstekNo = 0;
@@ -1511,6 +1721,7 @@
       $("gtLigSec").innerHTML = ligSecenekleri;
       $("syLigSec").innerHTML = `<option value="hepsi">🌍 Karışık (10 lig)</option>` + ligSecenekleri;
       $("ldLig").innerHTML = ligSecenekleri;
+      $("btLigSec").innerHTML = ligSecenekleri;
       const tarih = new Date(VERI.guncelleme).toLocaleString("tr-TR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
       $("guncelleme").textContent = `Son güncelleme: ${tarih} · Veri kaynağı: ESPN · Her gün otomatik güncellenir`;
       ligDegisti();
@@ -1518,6 +1729,7 @@
       gtBaslangicYazilari();
       syBaslangicYazilari();
       gbBaslat();
+      btBaslangicYazilari();
       if (location.hash === "#liderlik") ldYukle();
     } catch (e) {
       $("guncelleme").textContent = "";

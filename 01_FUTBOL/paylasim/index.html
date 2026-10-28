@@ -173,9 +173,12 @@
   .gecmis { text-align: left; margin: 16px auto; padding-left: 20px; line-height: 1.8; max-width: 420px; }
 
   .hata { padding: 14px; border-left: 4px solid var(--yanlis); }
+  .renk-kutu { display: inline-block; width: 28px; height: 20px; border-radius: 4px; border: 1px solid var(--cizgi); vertical-align: middle; }
+  .ulke-liste { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 
   @media (max-width: 520px) {
     .marka h1 { font-size: 32px; }
+    .sekmeler a { font-size: 15px; padding: 8px 10px; }
     .takim-baslik h3 { font-size: 24px; }
     .satir { grid-template-columns: minmax(0, 110px) minmax(0, 1fr) 26px; }
   }
@@ -193,6 +196,7 @@
     <nav class="sekmeler">
       <a href="#istatistik" id="sekmeIstatistik">İstatistikler</a>
       <a href="#oyun" id="sekmeOyun">İpucu Avı</a>
+      <a href="#gizli" id="sekmeGizli">Gizli Takım</a>
     </nav>
   </div>
 </div>
@@ -302,6 +306,48 @@
       <button id="tekrarBtn">Tekrar Oyna</button>
     </div>
   </section>
+
+  <!-- ===================== GİZLİ TAKIM ===================== -->
+  <section id="bolumGizli" class="oyun" hidden>
+    <div id="gtBaslangic" class="kart">
+      <h2 style="margin-top: 0;">Gizli Takım</h2>
+      <ol class="kurallar">
+        <li>Seçtiğin ligden rastgele bir takım seçilir. Adı ve logosu gizli.</li>
+        <li>Kadronun gerçek verilerinden ipuçları tek tek açılır: 1. ipucunda bilirsen <b>100</b>, son ipucunda <b>20</b> puan.</li>
+        <li>Yanlış tahmin yaparsan bir sonraki ipucu açılır.</li>
+        <li>Oyun <b>5 tur</b> sürer. Takım adının bir kısmını yazman yeter ("fener", "galata" gibi).</li>
+      </ol>
+      <div class="secimler">
+        <label>Lig <select id="gtLigSec"></select></label>
+        <button id="gtBaslatBtn">Oyuna Başla</button>
+      </div>
+      <p class="ipucu-yazi" id="gtRekorYazi"></p>
+    </div>
+
+    <div id="gtOyun" class="kart" hidden>
+      <div class="skorlar">
+        <span>Tur <b id="gtTurYazi">1/5</b></span>
+        <span>Puan <b id="gtPuanYazi">0</b></span>
+      </div>
+      <div id="gtIpuclari"></div>
+      <div class="tahmin">
+        <input id="gtTahminKutusu" list="gtTakimListesi" placeholder="Takımın adını yaz…" autocomplete="off">
+        <datalist id="gtTakimListesi"></datalist>
+        <button id="gtTahminBtn">Tahmin Et</button>
+        <button id="gtPasBtn" class="ikincil">Pas</button>
+      </div>
+      <div id="gtMesaj" class="mesaj"></div>
+      <button id="gtSonrakiBtn" hidden style="margin-top: 10px;">Sonraki Tur</button>
+    </div>
+
+    <div id="gtSonuc" class="kart sonuc" hidden>
+      <div>Toplam puanın</div>
+      <div class="buyuk" id="gtToplamPuan">0</div>
+      <div id="gtRekorMesaj"></div>
+      <ol class="gecmis" id="gtGecmis"></ol>
+      <button id="gtTekrarBtn">Tekrar Oyna</button>
+    </div>
+  </section>
 </main>
 
 <script>
@@ -336,16 +382,22 @@
   }
 
   // ============================================================
-  // SEKMELER (#istatistik / #oyun)
+  // SEKMELER (#istatistik / #oyun / #gizli)
   // ============================================================
+  const SEKMELER = [
+    { sekme: "sekmeIstatistik", bolum: "bolumIstatistik", hash: "#istatistik" },
+    { sekme: "sekmeOyun",       bolum: "bolumOyun",       hash: "#oyun" },
+    { sekme: "sekmeGizli",      bolum: "bolumGizli",      hash: "#gizli" },
+  ];
   function sekmeGoster() {
-    const oyun = location.hash === "#oyun";
-    $("bolumIstatistik").hidden = oyun;
-    $("bolumOyun").hidden = !oyun;
-    $("sekmeIstatistik").classList.toggle("aktif", !oyun);
-    $("sekmeOyun").classList.toggle("aktif", oyun);
+    // Adreste tanıdık bir sekme yoksa İstatistikler açılır
+    const aktif = SEKMELER.find(s => s.hash === location.hash) || SEKMELER[0];
+    for (const s of SEKMELER) {
+      $(s.bolum).hidden = s !== aktif;
+      $(s.sekme).classList.toggle("aktif", s === aktif);
+    }
   }
-  for (const [id, hash] of [["sekmeIstatistik", "#istatistik"], ["sekmeOyun", "#oyun"]]) {
+  for (const { sekme: id, hash } of SEKMELER) {
     $(id).addEventListener("click", e => {
       e.preventDefault();
       history.replaceState(null, "", hash);
@@ -629,6 +681,171 @@
   $("sonrakiBtn").addEventListener("click", () => tur < TUR_SAYISI ? yeniTur() : oyunuBitir());
 
   // ============================================================
+  // GİZLİ TAKIM
+  // İpucu Avı'nın tersi: oyuncu yerine takımı buluyoruz.
+  // Puanlama ve tur sayısı aynı (TUR_SAYISI, PUANLAR).
+  // ============================================================
+  const gt = { lig: null, takimlar: [], tur: 0, puan: 0, acik: 0, cevap: null, gecmis: [] };
+
+  function gtEkrani(ad) {
+    for (const e of ["gtBaslangic", "gtOyun", "gtSonuc"]) $(e).hidden = e !== ad;
+  }
+  const gtRekorAnahtari = () => "gtRekor_" + $("gtLigSec").value;
+  const gtRekoruOku = () => Number(hafizaOku(gtRekorAnahtari(), 0)) || 0;
+  function gtBaslangicYazilari() {
+    const r = gtRekoruOku();
+    $("gtRekorYazi").textContent = r ? `Bu ligdeki rekorun: ${r} puan` : "";
+  }
+
+  // Bir takımın kadrosundan 5 ipucu çıkar (zordan kolaya)
+  function gtIpuclari(takimId) {
+    const lig = ligBul(gt.lig);
+    const kadro = lig.oyuncular.filter(o => o.t === takimId);
+    const yaslar = kadro.filter(o => o.y).map(o => o.y);
+    const yasOrt = yaslar.length ? (yaslar.reduce((a, b) => a + b, 0) / yaslar.length).toFixed(1).replace(".", ",") : "?";
+
+    // En kalabalık 3 ülke
+    const ulkeler = {};
+    for (const o of kadro) {
+      if (!o.u) continue;          // uyruğu bilinmeyenleri sayma
+      const u = o.u;
+      ulkeler[u] = ulkeler[u] || { sayi: 0, uk: o.uk };
+      ulkeler[u].sayi++;
+    }
+    const ilkUc = Object.entries(ulkeler).sort((a, b) => b[1].sayi - a[1].sayi).slice(0, 3);
+    const ulkeYazi = `<span class="ulke-liste">${ilkUc.map(([ad, v]) =>
+      `<span>${v.uk ? `<img class="bayrak" src="${bayrakUrl(v.uk)}" alt=""> ` : ""}${ad}: ${v.sayi}</span>`).join("")}</span>`;
+
+    const p = lig.puan.find(t => t.id === takimId) || { o: 0, g: 0, b: 0, m: 0, av: 0 };
+    const sira = siraliPuan(lig).findIndex(t => t.id === takimId) + 1;
+    const takim = VERI.takimlar[takimId];
+    const renk1 = "#" + (takim.renk || "888888");
+    const renk2 = "#" + (takim.renk2 || takim.renk || "888888");
+
+    const golcu = [...kadro].sort((a, b) => (b.g - a.g) || (b.mac - a.mac))[0];
+    const golcuYazi = golcu && golcu.g > 0
+      ? `En golcüsü ${golcu.i} (${golcu.g} gol)`
+      : `En çok forma giyeni ${golcu?.i || "?"} (${golcu?.mac || 0} maç)`;
+
+    return [
+      { baslik: "Kadro", icerik: `${kadro.length} oyuncu, yaş ortalaması ${yasOrt}` },
+      { baslik: "En kalabalık uyruklar", icerik: ulkeYazi },
+      { baslik: "Bu sezon (lig)", icerik: `${p.o} maç: ${p.g}G ${p.b}B ${p.m}M, averaj ${p.av > 0 ? "+" : ""}${p.av}` },
+      { baslik: "Forma renkleri ve sıra", icerik: `<span class="renk-kutu" style="background:${renk1}"></span><span class="renk-kutu" style="background:${renk2}"></span> Puan durumunda ${sira}. sırada` },
+      { baslik: "Yıldızı", icerik: golcuYazi },
+    ];
+  }
+
+  function gtIpuclariniCiz() {
+    $("gtIpuclari").innerHTML = gtIpuclari(gt.cevap).map((ip, i) => {
+      const acik = i <= gt.acik;
+      return `
+        <div class="ipucu ${acik ? "acik" : ""}">
+          <div class="no">${i + 1}</div>
+          <div><div class="baslik">${ip.baslik}</div><div class="icerik">${acik ? ip.icerik : "Kilitli"}</div></div>
+          <div class="puan">${PUANLAR[i]} puan</div>
+        </div>`;
+    }).join("");
+  }
+
+  function gtYeniTur() {
+    gt.tur++; gt.acik = 0;
+    const sorulanlar = gt.gecmis.map(g => g.id);
+    const kalan = gt.takimlar.filter(id => !sorulanlar.includes(id));
+    gt.cevap = kalan[Math.floor(Math.random() * kalan.length)];
+    $("gtTurYazi").textContent = `${gt.tur}/${TUR_SAYISI}`;
+    $("gtPuanYazi").textContent = gt.puan;
+    $("gtMesaj").textContent = ""; $("gtMesaj").className = "mesaj";
+    $("gtTahminKutusu").value = "";
+    for (const id of ["gtTahminKutusu", "gtTahminBtn", "gtPasBtn"]) $(id).disabled = false;
+    $("gtSonrakiBtn").hidden = true;
+    gtIpuclariniCiz();
+    $("gtTahminKutusu").focus();
+  }
+
+  function gtTuruBitir(kazanilan, mesaj, dogru) {
+    gt.puan += kazanilan;
+    gt.gecmis.push({ id: gt.cevap, kazanilan });
+    gt.acik = 4; gtIpuclariniCiz();
+    $("gtPuanYazi").textContent = gt.puan;
+    $("gtMesaj").innerHTML = `<img class="logo" src="${logoUrl(gt.cevap)}" alt=""> ${mesaj}`;
+    $("gtMesaj").className = "mesaj " + (dogru ? "dogru" : "yanlis");
+    for (const id of ["gtTahminKutusu", "gtTahminBtn", "gtPasBtn"]) $(id).disabled = true;
+    $("gtSonrakiBtn").textContent = gt.tur < TUR_SAYISI ? "Sonraki Tur" : "Sonucu Gör";
+    $("gtSonrakiBtn").hidden = false;
+    $("gtSonrakiBtn").focus();
+  }
+
+  // "fener" -> Fenerbahçe: yazılan, ligde SADECE bir takımın adında geçiyorsa o takım sayılır
+  function gtTahminiBul(yazi) {
+    const t = sadelestir(yazi);
+    if (t.length < 3) return null;
+    const adlar = id => [VERI.takimlar[id].ad, VERI.takimlar[id].kisa].filter(Boolean).map(sadelestir);
+    const tam = gt.takimlar.find(id => adlar(id).includes(t));
+    if (tam) return tam;
+    const eslesen = gt.takimlar.filter(id => adlar(id).some(a => a.includes(t)));
+    return eslesen.length === 1 ? eslesen[0] : null;
+  }
+
+  function gtTahminEt() {
+    const yazi = $("gtTahminKutusu").value;
+    if (!yazi.trim()) return;
+    const bulunan = gtTahminiBul(yazi);
+    const ad = VERI.takimlar[gt.cevap].ad;
+    if (bulunan === gt.cevap) {
+      gtTuruBitir(PUANLAR[gt.acik], `Doğru! ${ad} (+${PUANLAR[gt.acik]} puan)`, true);
+    } else if (bulunan === null && sadelestir(yazi).length >= 3 &&
+               gt.takimlar.filter(id => sadelestir(VERI.takimlar[id].ad).includes(sadelestir(yazi))).length > 1) {
+      // Birden fazla takıma uyuyor: ceza yok, daha net yazmasını iste
+      $("gtMesaj").textContent = "Bu yazı birden fazla takıma uyuyor, biraz daha uzun yaz.";
+      $("gtMesaj").className = "mesaj";
+    } else if (gt.acik < 4) {
+      gt.acik++; gtIpuclariniCiz();
+      $("gtMesaj").textContent = "Yanlış, yeni ipucu açıldı."; $("gtMesaj").className = "mesaj yanlis";
+      $("gtTahminKutusu").value = ""; $("gtTahminKutusu").focus();
+    } else {
+      gtTuruBitir(0, `Bilemedin. Doğru cevap: ${ad}`, false);
+    }
+  }
+
+  function gtPasGec() {
+    if (gt.acik < 4) {
+      gt.acik++; gtIpuclariniCiz();
+      $("gtMesaj").textContent = "Yeni ipucu açıldı."; $("gtMesaj").className = "mesaj";
+    } else {
+      gtTuruBitir(0, `Doğru cevap: ${VERI.takimlar[gt.cevap].ad}`, false);
+    }
+  }
+
+  function gtOyunuBitir() {
+    gtEkrani("gtSonuc");
+    $("gtToplamPuan").textContent = gt.puan;
+    const rekor = gtRekoruOku();
+    if (gt.puan > rekor) { hafizaYaz(gtRekorAnahtari(), gt.puan); $("gtRekorMesaj").textContent = "Yeni rekor!"; }
+    else $("gtRekorMesaj").textContent = `Bu ligdeki rekorun: ${rekor}`;
+    $("gtGecmis").innerHTML = gt.gecmis.map(g =>
+      `<li><img class="logo" src="${logoUrl(g.id)}" alt=""> ${VERI.takimlar[g.id].ad}: <b>${g.kazanilan}</b></li>`).join("");
+  }
+
+  function gtOyunaBasla() {
+    gt.lig = $("gtLigSec").value;
+    gt.takimlar = ligBul(gt.lig).puan.map(t => t.id).filter(id => VERI.takimlar[id]);
+    $("gtTakimListesi").innerHTML = gt.takimlar.map(id => VERI.takimlar[id].ad)
+      .sort((a, b) => a.localeCompare(b, "tr")).map(ad => `<option value="${ad}">`).join("");
+    gt.tur = 0; gt.puan = 0; gt.gecmis = [];
+    gtEkrani("gtOyun");
+    gtYeniTur();
+  }
+
+  $("gtLigSec").addEventListener("change", gtBaslangicYazilari);
+  $("gtBaslatBtn").addEventListener("click", gtOyunaBasla);
+  $("gtTekrarBtn").addEventListener("click", () => { gtEkrani("gtBaslangic"); gtBaslangicYazilari(); });
+  $("gtTahminBtn").addEventListener("click", gtTahminEt);
+  $("gtTahminKutusu").addEventListener("keydown", e => { if (e.key === "Enter") gtTahminEt(); });
+  $("gtPasBtn").addEventListener("click", gtPasGec);
+  $("gtSonrakiBtn").addEventListener("click", () => gt.tur < TUR_SAYISI ? gtYeniTur() : gtOyunuBitir());
+
+  // ============================================================
   // AÇILIŞ: verileri yükle
   // ============================================================
   sekmeGoster();
@@ -638,10 +855,12 @@
       const ligSecenekleri = VERI.ligler.map(l => `<option value="${l.kod}">${BAYRAK_EMOJI[l.kod] || ""} ${l.ad}</option>`).join("");
       $("ligSec").innerHTML = ligSecenekleri;
       $("oyunLigSec").innerHTML = ligSecenekleri;
+      $("gtLigSec").innerHTML = ligSecenekleri;
       const tarih = new Date(VERI.guncelleme).toLocaleString("tr-TR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
       $("guncelleme").textContent = `Son güncelleme: ${tarih} · Veri kaynağı: ESPN · Her gün otomatik güncellenir`;
       ligDegisti();
       baslangicYazilari();
+      gtBaslangicYazilari();
     } catch (e) {
       $("guncelleme").textContent = "";
       $("hata").hidden = false;

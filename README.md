@@ -7,7 +7,7 @@ Bu dosya klasörün "pano"sudur (5S - Seiketsu). Her yeni proje buraya bir satı
 | No | Klasör | Ne işe yarar | Nasıl açılır |
 |----|--------|--------------|--------------|
 | 01 | `01_FUTBOL/` | Canlı (ESPN) futbol istatistikleri + "İpucu Avı" oyunu | `01_FUTBOL/BASLAT.bat` dosyasına çift tıkla |
-| 01 | `01_FUTBOL/paylasim/` | Paylaşılabilir sürüm "Saha Kenarı" (claude.ai'de yayında) | https://claude.ai/artifact/AFtHoPZWDuCvCTawcYya6X · Veri yenilemek: `veri_guncelle.ps1` |
+| 01 | `01_FUTBOL/paylasim/` | Herkese açık site "Saha Kenarı" — her sabah 07:00'de GitHub otomatik günceller | https://yunusbasyigit44-bot.github.io/saha-kenari/ |
 
 ## Klasör kuralları (5S)
 

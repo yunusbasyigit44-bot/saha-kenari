@@ -1,10 +1,13 @@
 # ============================================================
-# GÜNLÜK VERİ GÜNCELLEME (Yunus için not)
+# GÜNLÜK VERİ GÜNCELLEME + SİTE YAYINI (Yunus için not)
 # ------------------------------------------------------------
 # GitHub her sabah bu dosyadaki adımları kendi bilgisayarında çalıştırır:
 #   1) Projeyi indirir
 #   2) veri_guncelle.ps1 ile ESPN'den güncel verileri çeker (kalite kontrol dahil)
 #   3) Değişen veriyi projeye kaydeder (commit) ve yükler (push)
+#   4) Siteyi GitHub Pages'te yeniden yayınlar:
+#      https://yunusbasyigit44-bot.github.io/saha-kenari/
+# Kodda bir değişiklik yüklendiğinde (push) sadece 4. adım çalışır.
 # Senin bilgisayarının açık olması gerekmez.
 # Elle çalıştırmak için: GitHub > repo > Actions > "Günlük veri güncelleme" > Run workflow
 # ============================================================
@@ -15,23 +18,39 @@ on:
   schedule:
     - cron: "0 4 * * *"     # her gün 04:00 UTC = Türkiye saatiyle 07:00
   workflow_dispatch:         # elle başlatma butonu
+  push:
+    branches: [main]
+    paths:
+      - "01_FUTBOL/paylasim/**"
+      - ".github/workflows/veri-guncelle.yml"
 
 permissions:
   contents: write            # veriyi repoya geri kaydedebilmesi için
+  pages: write               # siteyi yayınlayabilmesi için
+  id-token: write
+
+concurrency:
+  group: saha-kenari
+  cancel-in-progress: false
 
 jobs:
-  guncelle:
+  guncelle-ve-yayinla:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    environment:
+      name: github-pages
+      url: ${{ steps.yayin.outputs.page_url }}
     steps:
       - name: Projeyi indir
         uses: actions/checkout@v5
 
       - name: ESPN'den verileri indir
+        if: github.event_name != 'push'
         shell: pwsh
         run: ./01_FUTBOL/paylasim/veri_guncelle.ps1
 
       - name: Değişiklik varsa kaydet ve yükle
+        if: github.event_name != 'push'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -42,3 +61,30 @@ jobs:
             git commit -m "Veriler güncellendi: $(date -u +'%Y-%m-%d')"
             git push
           fi
+
+      # index.html claude.ai için yazıldı (başı/sonu yok); burada tam bir web sayfasına çeviriyoruz
+      - name: Site dosyalarını hazırla
+        run: |
+          mkdir -p _site
+          cp 01_FUTBOL/paylasim/data.json 01_FUTBOL/paylasim/gorseller.json _site/
+          {
+            echo '<!doctype html><html lang="tr"><head><meta charset="utf-8">'
+            echo '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
+            echo '<meta name="description" content="10 ligin her gün güncellenen futbol istatistikleri ve İpucu Avı oyunu">'
+            echo '<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>'
+            echo '</head><body>'
+            cat 01_FUTBOL/paylasim/index.html
+            echo '</body></html>'
+          } > _site/index.html
+
+      - name: Pages ayarlarını hazırla
+        uses: actions/configure-pages@v5
+
+      - name: Siteyi paketle
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+      - name: Siteyi yayınla
+        id: yayin
+        uses: actions/deploy-pages@v4

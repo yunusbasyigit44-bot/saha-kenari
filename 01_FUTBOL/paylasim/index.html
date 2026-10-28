@@ -201,6 +201,27 @@
     .oyuncu-kart { transition: border-color 0.2s; }
   }
 
+  /* ---------- GÜNÜN BULMACASI ---------- */
+  .gb-ust { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .gb-ust h2 { margin: 0; }
+  .gb-tarih { font-size: 14px; color: var(--soluk); }
+  .kareler { font-size: 26px; letter-spacing: 4px; text-align: center; margin: 10px 0; }
+  .paylas-metin {
+    width: 100%; font: inherit; font-size: 14px; color: var(--yazi); background: var(--zemin);
+    border: 1px solid var(--cizgi); border-radius: 8px; padding: 10px; resize: none; text-align: center;
+  }
+  .gb-dugmeler { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+  .dugme {
+    display: inline-block; text-decoration: none; font-weight: 700; font-size: 15px;
+    padding: 10px 16px; border-radius: 8px; background: var(--saha); color: var(--saha-yazi);
+  }
+  .dugme.ikincil { background: var(--cizgi); color: var(--yazi); }
+  .dugme:focus-visible { outline: 3px solid var(--vurgu); outline-offset: 2px; }
+  .gb-istatistik { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 16px; text-align: center; }
+  .gb-istatistik b { display: block; font-family: var(--font-baslik); font-size: 28px; font-variant-numeric: tabular-nums; }
+  .gb-istatistik span { font-size: 12px; color: var(--soluk); }
+  .gb-tahminler { list-style: none; padding: 0; margin: 10px 0 0; font-size: 14px; color: var(--soluk); }
+
   @media (max-width: 520px) {
     .marka h1 { font-size: 32px; }
     .sekmeler { gap: 2px; }
@@ -224,6 +245,7 @@
       <a href="#oyun" id="sekmeOyun">İpucu Avı</a>
       <a href="#gizli" id="sekmeGizli">Gizli Takım</a>
       <a href="#seri" id="sekmeSeri">Seri Yakala</a>
+      <a href="#gunluk" id="sekmeGunluk">Günün Bulmacası</a>
     </nav>
   </div>
 </div>
@@ -412,6 +434,48 @@
       <button id="syTekrarBtn">Tekrar Oyna</button>
     </div>
   </section>
+
+  <!-- ===================== GÜNÜN BULMACASI ===================== -->
+  <section id="bolumGunluk" class="oyun" hidden>
+    <div class="kart">
+      <div class="gb-ust">
+        <h2 id="gbBaslik">Günün Bulmacası</h2>
+        <span class="gb-tarih" id="gbTarih"></span>
+      </div>
+      <p class="ipucu-yazi" style="margin-top: 0;">Herkese bugün aynı oyuncu soruluyor. 5 tahmin hakkın var; her yanlış tahminde yeni ipucu açılır. Sonucunu arkadaşlarınla paylaş!</p>
+
+      <div id="gbIpuclari" style="margin-top: 12px;"></div>
+
+      <div id="gbOynaniyor">
+        <div class="tahmin">
+          <input id="gbTahminKutusu" list="gbOyuncuListesi" placeholder="Oyuncunun adını yaz…" autocomplete="off">
+          <datalist id="gbOyuncuListesi"></datalist>
+          <button id="gbTahminBtn">Tahmin Et</button>
+          <button id="gbPasBtn" class="ikincil">Pas</button>
+        </div>
+        <div id="gbMesaj" class="mesaj"></div>
+      </div>
+      <ul class="gb-tahminler" id="gbTahminler"></ul>
+
+      <div id="gbBitti" hidden style="text-align: center; margin-top: 12px;">
+        <div id="gbSonucMesaj" class="mesaj"></div>
+        <div class="kareler" id="gbKareler"></div>
+        <textarea class="paylas-metin" id="gbPaylasMetin" rows="3" readonly></textarea>
+        <div class="gb-dugmeler">
+          <button id="gbKopyalaBtn">Sonucu Kopyala</button>
+          <a id="gbWhatsapp" class="dugme ikincil" target="_blank" rel="noopener">WhatsApp'ta Paylaş</a>
+        </div>
+        <p class="ipucu-yazi" id="gbGeriSayim"></p>
+      </div>
+
+      <div class="gb-istatistik">
+        <div><b id="gbOynanan">0</b><span>Oynanan</span></div>
+        <div><b id="gbKazanma">0%</b><span>Bilme oranı</span></div>
+        <div><b id="gbSeri">0</b><span>Günlük seri</span></div>
+        <div><b id="gbEnIyi">0</b><span>En iyi seri</span></div>
+      </div>
+    </div>
+  </section>
 </main>
 
 <script>
@@ -453,6 +517,7 @@
     { sekme: "sekmeOyun",       bolum: "bolumOyun",       hash: "#oyun" },
     { sekme: "sekmeGizli",      bolum: "bolumGizli",      hash: "#gizli" },
     { sekme: "sekmeSeri",       bolum: "bolumSeri",       hash: "#seri" },
+    { sekme: "sekmeGunluk",     bolum: "bolumGunluk",     hash: "#gunluk" },
   ];
   function sekmeGoster() {
     // Adreste tanıdık bir sekme yoksa İstatistikler açılır
@@ -461,6 +526,9 @@
       $(s.bolum).hidden = s !== aktif;
       $(s.sekme).classList.toggle("aktif", s === aktif);
     }
+    // Telefonda sekmeler yana kayıyor: açık olan sekme hep görünsün
+    const bar = document.querySelector(".sekmeler"), a = $(aktif.sekme);
+    bar.scrollLeft = Math.max(0, a.offsetLeft - bar.offsetLeft - (bar.clientWidth - a.offsetWidth) / 2);
   }
   for (const { sekme: id, hash } of SEKMELER) {
     $(id).addEventListener("click", e => {
@@ -1046,6 +1114,174 @@
   });
 
   // ============================================================
+  // GÜNÜN BULMACASI
+  // Herkese aynı gün aynı oyuncu: oyuncuyu tarihten hesaplıyoruz,
+  // böylece sunucuya gerek kalmadan herkes aynı soruyu görüyor.
+  // İpuçları İpucu Avı ile aynı (ipuclari fonksiyonu).
+  // ============================================================
+  const GB_ILK_GUN = "2026-10-28";   // 1 numaralı bulmacanın tarihi
+  const GB_HAK = 5;
+  let gbCevap = null, gbDurum = null;
+
+  // Türkiye saatine göre bugünün tarihi: "2026-10-28"
+  const gbBugun = () => new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" });
+  function gbGunEkle(tarih, gun) {
+    const d = new Date(tarih + "T12:00:00Z");
+    d.setUTCDate(d.getUTCDate() + gun);
+    return d.toISOString().slice(0, 10);
+  }
+  const gbNumara = tarih => Math.round((Date.parse(tarih) - Date.parse(GB_ILK_GUN)) / 86400000) + 1;
+
+  // Bir yazıyı sayıya çeviren basit "karıştırıcı" (FNV-1a): aynı yazı hep aynı sayıyı verir
+  function karistir(yazi) {
+    let h = 2166136261;
+    for (let i = 0; i < yazi.length; i++) { h ^= yazi.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+
+  // Bugünün oyuncusu: büyük kulüplerin düzenli oynayanları arasından,
+  // "isim + tarih" karışımı en küçük çıkan oyuncu. Veri her sabah güncellense de
+  // aynı gün herkes aynı oyuncuyu görür.
+  function gbOyuncuSec(tarih) {
+    let secilen = null, enKucuk = Infinity;
+    for (const lig of VERI.ligler) {
+      const buyukler = BUYUK_KULUPLER[lig.kod];
+      if (!buyukler) continue;
+      const enCokMac = Math.max(0, ...lig.oyuncular.map(o => o.mac));
+      const enAz = Math.max(EN_AZ_MAC, Math.ceil(enCokMac * 0.6));
+      for (const o of lig.oyuncular) {
+        if (!buyukler.includes(o.t) || o.mac < enAz) continue;
+        const k = karistir(o.i + "|" + tarih);
+        if (k < enKucuk) { enKucuk = k; secilen = o; }
+      }
+    }
+    return secilen;
+  }
+
+  const gbDurumOku = tarih => { try { return JSON.parse(hafizaOku("gb_" + tarih, "null")); } catch (e) { return null; } };
+  const gbDurumYaz = () => hafizaYaz("gb_" + gbDurum.tarih, JSON.stringify(gbDurum));
+  function gbIstatistikOku() {
+    try { return JSON.parse(hafizaOku("gb_istatistik", "null")) || { oynanan: 0, bilinen: 0, seri: 0, enIyi: 0, sonBilinen: "" }; }
+    catch (e) { return { oynanan: 0, bilinen: 0, seri: 0, enIyi: 0, sonBilinen: "" }; }
+  }
+
+  function gbIstatistikGuncelle(kazandi) {
+    const s = gbIstatistikOku();
+    s.oynanan++;
+    if (kazandi) {
+      s.bilinen++;
+      // Dün de bildiysen seri devam eder
+      s.seri = s.sonBilinen === gbGunEkle(gbDurum.tarih, -1) ? s.seri + 1 : 1;
+      s.sonBilinen = gbDurum.tarih;
+      s.enIyi = Math.max(s.enIyi, s.seri);
+    } else {
+      s.seri = 0;
+    }
+    hafizaYaz("gb_istatistik", JSON.stringify(s));
+  }
+
+  function gbKareler() {
+    const t = gbDurum.tahminler;
+    return Array.from({ length: GB_HAK }, (_, i) =>
+      i >= t.length ? "⬜" : (gbDurum.kazandi && i === t.length - 1 ? "🟩" : "🟥")).join("");
+  }
+
+  function gbPaylasMetni() {
+    const sonuc = gbDurum.kazandi ? `${gbDurum.tahminler.length}/${GB_HAK}` : `X/${GB_HAK}`;
+    return `Saha Kenarı · Günün Bulmacası #${gbNumara(gbDurum.tarih)}\n${gbKareler()} (${sonuc})\n${location.origin}${location.pathname}#gunluk`;
+  }
+
+  function gbGeriSayim() {
+    // Gün değiştiyse (gece yarısı sayfa açıksa) yeni bulmacayı yükle
+    if (gbDurum && gbDurum.tarih !== gbBugun()) { gbBaslat(); return; }
+    if ($("gbBitti").hidden) return;
+    const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Istanbul", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
+    }).formatToParts(new Date()).map(x => [x.type, Number(x.value)]));
+    const kalan = 86400 - (p.hour * 3600 + p.minute * 60 + p.second);
+    $("gbGeriSayim").textContent = `Yeni bulmaca ${Math.floor(kalan / 3600)} sa ${Math.floor((kalan % 3600) / 60)} dk sonra.`;
+  }
+
+  function gbCiz() {
+    const ipler = ipuclari(gbCevap);
+    const bitti = gbDurum.bitti;
+    const acik = bitti ? 4 : Math.min(gbDurum.tahminler.length, 4);
+    $("gbIpuclari").innerHTML = ipler.map((ip, i) => `
+      <div class="ipucu ${i <= acik ? "acik" : ""}">
+        <div class="no">${i + 1}</div>
+        <div><div class="baslik">${ip.baslik}</div><div class="icerik">${i <= acik ? ip.icerik : "Kilitli"}</div></div>
+      </div>`).join("");
+    $("gbTahminler").innerHTML = gbDurum.tahminler.map((t, i) =>
+      `<li>${i + 1}. tahmin: ${t === "" ? "Pas" : t}</li>`).join("");
+    $("gbOynaniyor").hidden = bitti;
+    $("gbBitti").hidden = !bitti;
+    if (bitti) {
+      $("gbSonucMesaj").textContent = gbDurum.kazandi
+        ? `Bildin! Bugünün oyuncusu ${gbCevap.i}.`
+        : `Bu sefer olmadı. Bugünün oyuncusu ${gbCevap.i}.`;
+      $("gbSonucMesaj").className = "mesaj " + (gbDurum.kazandi ? "dogru" : "yanlis");
+      $("gbKareler").textContent = gbKareler();
+      const metin = gbPaylasMetni();
+      $("gbPaylasMetin").value = metin;
+      $("gbWhatsapp").href = "https://wa.me/?text=" + encodeURIComponent(metin);
+      gbGeriSayim();
+    }
+    const s = gbIstatistikOku();
+    $("gbOynanan").textContent = s.oynanan;
+    $("gbKazanma").textContent = (s.oynanan ? Math.round((s.bilinen / s.oynanan) * 100) : 0) + "%";
+    $("gbSeri").textContent = s.seri;
+    $("gbEnIyi").textContent = s.enIyi;
+  }
+
+  function gbTahminIsle(yazi) {
+    if (gbDurum.bitti) return;
+    const t = sadelestir(yazi);
+    const tamAd = sadelestir(gbCevap.i);
+    const soyad = tamAd.split(" ").slice(-1)[0];
+    const dogru = t !== "" && (t === tamAd || (t === soyad && soyad.length > 2));
+    gbDurum.tahminler.push(yazi.trim());
+    if (dogru || gbDurum.tahminler.length >= GB_HAK) {
+      gbDurum.bitti = true;
+      gbDurum.kazandi = dogru;
+      gbIstatistikGuncelle(dogru);
+      $("gbMesaj").textContent = "";
+    } else {
+      $("gbMesaj").textContent = t === "" ? "Yeni ipucu açıldı." : "Yanlış, yeni ipucu açıldı.";
+      $("gbMesaj").className = "mesaj" + (t === "" ? "" : " yanlis");
+    }
+    gbDurumYaz();
+    $("gbTahminKutusu").value = "";
+    gbCiz();
+  }
+
+  function gbBaslat() {
+    const bugun = gbBugun();
+    gbCevap = gbOyuncuSec(bugun);
+    if (!gbCevap) return;
+    gbDurum = gbDurumOku(bugun) || { tarih: bugun, oyuncu: gbCevap.i, tahminler: [], bitti: false, kazandi: false };
+    $("gbBaslik").textContent = `Günün Bulmacası #${gbNumara(bugun)}`;
+    $("gbTarih").textContent = new Date(bugun + "T12:00:00Z").toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
+    $("gbOyuncuListesi").innerHTML = [...new Set(VERI.ligler.flatMap(l => l.oyuncular.map(o => o.i)))]
+      .sort((a, b) => a.localeCompare(b, "tr")).map(i => `<option value="${i}">`).join("");
+    $("gbMesaj").textContent = "";
+    gbCiz();
+  }
+
+  $("gbTahminBtn").addEventListener("click", () => { if ($("gbTahminKutusu").value.trim()) gbTahminIsle($("gbTahminKutusu").value); });
+  $("gbTahminKutusu").addEventListener("keydown", e => {
+    if (e.key === "Enter" && $("gbTahminKutusu").value.trim()) gbTahminIsle($("gbTahminKutusu").value);
+  });
+  $("gbPasBtn").addEventListener("click", () => gbTahminIsle(""));
+  $("gbKopyalaBtn").addEventListener("click", () => {
+    const metin = $("gbPaylasMetin").value;
+    const elle = () => { $("gbPaylasMetin").select(); try { document.execCommand("copy"); } catch (e) {} };
+    if (navigator.clipboard) navigator.clipboard.writeText(metin).catch(elle); else elle();
+    $("gbKopyalaBtn").textContent = "Kopyalandı";
+    setTimeout(() => $("gbKopyalaBtn").textContent = "Sonucu Kopyala", 2000);
+  });
+  setInterval(gbGeriSayim, 30000);
+
+  // ============================================================
   // AÇILIŞ: verileri yükle
   // ============================================================
   sekmeGoster();
@@ -1063,6 +1299,7 @@
       baslangicYazilari();
       gtBaslangicYazilari();
       syBaslangicYazilari();
+      gbBaslat();
     } catch (e) {
       $("guncelleme").textContent = "";
       $("hata").hidden = false;

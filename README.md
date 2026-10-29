@@ -8,6 +8,7 @@ Bu dosya klasörün "pano"sudur (5S - Seiketsu). Her yeni proje buraya bir satı
 |----|--------|--------------|--------------|
 | 01 | `01_FUTBOL/` | Canlı (ESPN) futbol istatistikleri + "İpucu Avı" oyunu | `01_FUTBOL/BASLAT.bat` dosyasına çift tıkla |
 | 01 | `01_FUTBOL/paylasim/` | Herkese açık site "Saha Kenarı" — her sabah 07:00'de GitHub otomatik günceller | https://yunusbasyigit44-bot.github.io/saha-kenari/ |
+| 01 | `01_FUTBOL/paylasim/` (Skor Tahmini) | Maç skoru tahmin oyunu + arkadaş ligleri. Fikstür: `fikstur_guncelle.ps1` → `fikstur.json`. Tablolar: `supabase_kurulum.sql` EK 2 | Sitede "Skor Tahmini" sekmesi · bilgisayarda önizleme: `onizleme.ps1` → http://localhost:8766 |
 
 ## Klasör kuralları (5S)
 

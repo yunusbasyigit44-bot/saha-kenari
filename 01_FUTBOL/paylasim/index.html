@@ -234,6 +234,45 @@
   .bt-liste li.bulundu { border-color: var(--dogru); }
   .bt-liste li.kacti { color: var(--soluk); border-style: dashed; }
 
+  /* ---------- SKOR TAHMİNİ ---------- */
+  .st-gun { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--soluk); margin: 18px 0 6px; }
+  .oyun .kart.st-liste { padding: 0; }
+  .mac {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 4px 10px; align-items: center;
+    padding: 10px 12px; border-bottom: 1px solid var(--cizgi);
+  }
+  .mac:last-child { border-bottom: none; }
+  .mac-ust { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--soluk); }
+  .mac-takim { display: flex; align-items: center; gap: 8px; font-weight: 600; min-width: 0; }
+  .mac-takim span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mac-takim.ev { justify-content: flex-end; text-align: right; }
+  .mac-skor { display: flex; align-items: center; gap: 6px; }
+  .mac-skor input { width: 46px; text-align: center; padding: 8px 4px; font-weight: 700; -moz-appearance: textfield; }
+  .mac-skor input::-webkit-inner-spin-button, .mac-skor input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .mac-skor .kilit { font-family: var(--font-baslik); font-size: 24px; font-weight: 800; min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; }
+  .canli { color: var(--yanlis); font-weight: 700; }
+  .rozet { display: inline-block; padding: 1px 8px; border-radius: 999px; font-weight: 700; background: var(--cizgi); color: var(--yazi); }
+  .rozet.p3 { background: var(--dogru); color: #fff; }
+  .rozet.p2, .rozet.p1 { background: var(--secili); }
+  .st-kaydet {
+    position: sticky; bottom: 0; z-index: 1; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    background: var(--zemin); padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+  .st-kaydet .mesaj { margin: 0; min-height: 0; }
+  .st-form { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .st-form input { flex: 1 1 200px; }
+  .st-lig { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid var(--cizgi); }
+  .st-lig code { font-size: 15px; font-weight: 700; letter-spacing: 0.1em; background: var(--zemin); padding: 2px 8px; border-radius: 6px; }
+  .st-lig .bosluk { flex: 1; }
+  .st-lig button, .st-lig .dugme { padding: 6px 10px; font-size: 13px; }
+  @media (max-width: 520px) {
+    .mac { gap: 4px 6px; padding: 10px 8px; }
+    .mac-takim { gap: 5px; font-size: 14px; line-height: 1.15; }
+    .mac-takim span { white-space: normal; overflow-wrap: anywhere; }
+    .mac-skor { gap: 3px; }
+    .mac-skor input { width: 38px; padding: 8px 2px; }
+  }
+
   /* ---------- LİDERLİK ---------- */
   .skor-formu { margin: 16px auto 0; max-width: 420px; padding-top: 14px; border-top: 1px solid var(--cizgi); text-align: center; }
   .skor-formu .satir-form { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
@@ -268,6 +307,7 @@
       <a href="#seri" id="sekmeSeri">Seri Yakala</a>
       <a href="#gunluk" id="sekmeGunluk">Günün Bulmacası</a>
       <a href="#bayrak" id="sekmeBayrak">Bayrak Turu</a>
+      <a href="#tahmin" id="sekmeTahmin">Skor Tahmini</a>
       <a href="#liderlik" id="sekmeLiderlik">Liderlik</a>
     </nav>
   </div>
@@ -549,6 +589,59 @@
     </div>
   </section>
 
+  <!-- ===================== SKOR TAHMİNİ ===================== -->
+  <section id="bolumTahmin" class="oyun" hidden>
+    <div class="kart">
+      <h2 style="margin-top: 0;">Skor Tahmini</h2>
+      <ul class="kurallar">
+        <li>Maçların skorunu tahmin et. Maç başlayana kadar istediğin kadar değiştirebilirsin.</li>
+        <li><b>Tam skor 3 puan</b> · doğru kazanan ve gol farkı 2 puan · sadece doğru kazanan (ya da beraberlik) 1 puan.</li>
+        <li>Arkadaşlarınla özel lig kur, haftalık ve sezonluk yarışın.</li>
+      </ul>
+      <div class="secimler">
+        <label>Lig <select id="stLigSec"></select></label>
+        <label>Takma ad <input id="stAd" maxlength="20" placeholder="2-20 harf" autocomplete="nickname"></label>
+      </div>
+    </div>
+    <div id="stMaclar"><p class="ipucu-yazi">Maçlar yükleniyor…</p></div>
+    <div class="st-kaydet">
+      <button id="stKaydetBtn" disabled>Tahminleri Kaydet</button>
+      <span class="mesaj" id="stMesaj"></span>
+    </div>
+
+    <h2>Puan Tablosu</h2>
+    <div class="secimler">
+      <label>Kimler <select id="stKapsam"><option value="herkes">Herkes</option></select></label>
+      <label>Dönem
+        <select id="stDonem">
+          <option value="hafta">Bu hafta</option>
+          <option value="tum">Tüm zamanlar</option>
+        </select>
+      </label>
+    </div>
+    <div class="kart tablo-kap" style="margin-top: 10px; padding: 0;">
+      <table class="lider-tablo">
+        <thead><tr><th class="sayi">#</th><th>Takma ad</th><th class="sayi">Tahmin</th><th class="sayi">Tam skor</th><th class="sayi">Puan</th></tr></thead>
+        <tbody id="stTablo"></tbody>
+      </table>
+    </div>
+    <p class="ipucu-yazi">Sadece biten maçlar puan getirir. Maç başladıktan sonra yapılan tahminler sayılmaz. Hafta pazartesi başlar.</p>
+
+    <h2>Arkadaş Ligi</h2>
+    <div class="kart">
+      <div id="stLiglerim"></div>
+      <div class="st-form">
+        <input id="stYeniLig" maxlength="30" placeholder="Yeni ligin adı (ör. Ofis Ligi)">
+        <button id="stKurBtn">Lig Kur</button>
+      </div>
+      <div class="st-form">
+        <input id="stKatilKod" maxlength="6" placeholder="Arkadaşının 6 haneli kodu" autocapitalize="characters" autocomplete="off">
+        <button id="stKatilBtn" class="ikincil">Katıl</button>
+      </div>
+      <div class="mesaj" id="stLigMesaj"></div>
+    </div>
+  </section>
+
   <!-- ===================== LİDERLİK ===================== -->
   <section id="bolumLiderlik" hidden>
     <div class="secimler">
@@ -628,6 +721,7 @@
     { sekme: "sekmeSeri",       bolum: "bolumSeri",       hash: "#seri" },
     { sekme: "sekmeGunluk",     bolum: "bolumGunluk",     hash: "#gunluk" },
     { sekme: "sekmeBayrak",     bolum: "bolumBayrak",     hash: "#bayrak" },
+    { sekme: "sekmeTahmin",     bolum: "bolumTahmin",     hash: "#tahmin" },
     { sekme: "sekmeLiderlik",   bolum: "bolumLiderlik",   hash: "#liderlik" },
   ];
   function sekmeGoster() {
@@ -642,6 +736,7 @@
     bar.scrollLeft = Math.max(0, a.offsetLeft - bar.offsetLeft - (bar.clientWidth - a.offsetWidth) / 2);
     // Liderlik sekmesi her açıldığında tabloyu tazele
     if (aktif.hash === "#liderlik" && VERI) ldYukle();
+    if (aktif.hash === "#tahmin" && VERI) stGoster();
   }
   for (const { sekme: id, hash } of SEKMELER) {
     $(id).addEventListener("click", e => {
@@ -1709,6 +1804,446 @@
   for (const id of ["ldOyun", "ldLig", "ldSeviye", "ldDonem"]) $(id).addEventListener("change", ldYukle);
 
   // ============================================================
+  // SKOR TAHMİNİ
+  // Maçlar: fikstur.json (her sabah) + seçili lig için ESPN'den canlı.
+  // Tahminler ve arkadaş ligleri Supabase'de (bkz. supabase_kurulum.sql, EK 2).
+  // Puanlar sayfada hesaplanır: herkes aynı maç verisini gördüğü için sonuç herkeste aynıdır.
+  // ============================================================
+  const TAHMIN_API = SUPABASE_URL + "/rest/v1/tahminler";
+  const ESPN_API = "https://site.api.espn.com/apis/site/v2/sports/soccer";
+  const SAAT = 3600000, GUN = 24 * SAAT;
+
+  let FIKSTUR = {};                 // maç no -> { l: lig, t: başlama, e: ev, d: deplasman, es/ds: skor, s: durum, dk: dakika }
+  let stLig = hafizaOku("stLig", "tur.1");
+  let stBenim = {};                 // maç no -> { ev, dep } (kaydettiğim son geçerli tahmin)
+  let stTaslak = {};                // maç no -> { ev, dep } (yazdım ama henüz kaydetmedim)
+  let stOyuncu = null;              // cihaz kimliğimin şifreli hali (veritabanındaki "oyuncu")
+  let stBenimYuklendi = false;
+  let stCanliZaman = 0;
+
+  // Maç başladıysa (ya da saati geldiyse) tahmin kapanır
+  const basladi = m => m.s !== "pre" || Date.now() >= Date.parse(m.t);
+  const gecerliTahmin = (t, m) => Date.parse(t.olusturma) < Date.parse(m.t);
+  const gunKodu = zaman => new Date(zaman).toISOString().slice(0, 10).replace(/-/g, "");
+  const stYaziyor = () => document.activeElement?.closest?.("#stMaclar") != null;
+
+  // Veritabanı cihaz kimliğini sha256 ile şifreleyip saklıyor; ben de aynısını hesaplayıp kendimi tanıyorum
+  async function oyuncuKimligi() {
+    if (stOyuncu) return stOyuncu;
+    const bayt = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(cihazKimligi().toLowerCase()));
+    stOyuncu = [...new Uint8Array(bayt)].map(b => b.toString(16).padStart(2, "0")).join("");
+    return stOyuncu;
+  }
+
+  // Tam skor 3, doğru kazanan + gol farkı 2, sadece doğru kazanan 1. Maç bitmediyse null.
+  function tahminPuani(t, m) {
+    if (m.s !== "post" || m.es == null) return null;
+    if (t.ev === m.es && t.dep === m.ds) return 3;
+    if (Math.sign(t.ev - t.dep) !== Math.sign(m.es - m.ds)) return 0;
+    return t.ev - t.dep === m.es - m.ds ? 2 : 1;
+  }
+
+  // ESPN'den bir ligin bir günlük maçlarını alıp FIKSTUR'a işle
+  async function espnGun(lig, gun) {
+    const v = await (await fetch(`${ESPN_API}/${lig}/scoreboard?dates=${gun}`)).json();
+    for (const e of v.events || []) {
+      const c = e.competitions[0], tip = e.status.type;
+      const ev = c.competitors.find(x => x.homeAway === "home"), dep = c.competitors.find(x => x.homeAway === "away");
+      const s = /POSTPONED|CANCELED|CANCELLED|ABANDONED|SUSPENDED|FORFEIT/.test(tip.name) ? "iptal" : tip.state;
+      const skorVar = s === "in" || s === "post";
+      FIKSTUR[e.id] = { l: lig, t: e.date, e: ev.team.id, d: dep.team.id,
+        es: skorVar ? +ev.score : null, ds: skorVar ? +dep.score : null, s, dk: tip.shortDetail };
+    }
+  }
+
+  async function stCanliTazele() {
+    const lig = stLig;
+    stCanliZaman = Date.now();
+    await Promise.allSettled(Array.from({ length: 11 }, (_, i) => espnGun(lig, gunKodu(Date.now() + (i - 2) * GUN))));
+    if (lig === stLig && !stYaziyor()) stCiz();
+  }
+
+  // Supabase en fazla 1000 satır veriyor; sayfa sayfa hepsini al
+  async function tumSatirlar(p) {
+    const hepsi = [];
+    for (let bas = 0; bas < 20000; bas += 1000) {
+      const cevap = await fetch(TAHMIN_API + "?" + p, {
+        headers: { apikey: SUPABASE_ANAHTAR, Range: `${bas}-${bas + 999}`, "Range-Unit": "items" } });
+      if (!cevap.ok) throw new Error(cevap.status);
+      const parca = await cevap.json();
+      hepsi.push(...parca);
+      if (parca.length < 1000) break;
+    }
+    return hepsi;
+  }
+
+  async function stBenimYukle() {
+    const p = new URLSearchParams({ select: "mac,ev,dep,olusturma", oyuncu: "eq." + await oyuncuKimligi(), order: "olusturma.asc,id.asc" });
+    const satirlar = await tumSatirlar(p);
+    stBenim = {};
+    for (const s of satirlar) {
+      const m = FIKSTUR[s.mac];
+      if (!m || gecerliTahmin(s, m)) stBenim[s.mac] = s;
+    }
+    stBenimYuklendi = true;
+  }
+
+  function stMacSatiri(m) {
+    const ad = id => VERI.takimlar[id]?.kisa || "?";
+    const benim = stBenim[m.id], taslak = stTaslak[m.id] || benim;
+    let durum, orta, alt;
+    if (!basladi(m)) {
+      durum = new Date(m.t).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+      const kutu = (yan, takim) => `<input type="number" inputmode="numeric" min="0" max="20" data-mac="${m.id}" data-yan="${yan}"
+        value="${taslak ? taslak[yan] : ""}" aria-label="${ad(takim)} gol tahmini">`;
+      orta = `${kutu("ev", m.e)}<span>-</span>${kutu("dep", m.d)}`;
+      alt = benim ? `Kayıtlı: ${benim.ev}-${benim.dep}` : "";
+    } else {
+      durum = m.s === "in" ? `<span class="canli">● ${m.dk || "Canlı"}</span>`
+        : m.s === "post" ? "Bitti" : m.s === "iptal" ? "Ertelendi" : "Başladı";
+      orta = `<span class="kilit">${m.es != null ? `${m.es}-${m.ds}` : "–"}</span>`;
+      const p = benim ? tahminPuani(benim, m) : null;
+      alt = benim ? `Tahminin ${benim.ev}-${benim.dep}${p != null ? ` <span class="rozet p${p}">+${p}</span>` : ""}` : "Tahmin yok";
+    }
+    return `<div class="mac">
+        <div class="mac-ust"><span>${durum}</span><span>${alt}</span></div>
+        <div class="mac-takim ev"><span>${ad(m.e)}</span><img class="logo" src="${logoUrl(m.e)}" alt=""></div>
+        <div class="mac-skor">${orta}</div>
+        <div class="mac-takim dep"><img class="logo" src="${logoUrl(m.d)}" alt=""><span>${ad(m.d)}</span></div>
+      </div>`;
+  }
+
+  // Son 3 gün + önümüzdeki 8 günün maçları, güne göre gruplu
+  function stCiz() {
+    const simdi = Date.now();
+    const maclar = Object.entries(FIKSTUR).map(([id, m]) => ({ id, ...m }))
+      .filter(m => m.l === stLig && Date.parse(m.t) > simdi - 3 * GUN && Date.parse(m.t) < simdi + 8 * GUN)
+      .sort((a, b) => Date.parse(a.t) - Date.parse(b.t) || a.id.localeCompare(b.id));
+    if (!maclar.length) {
+      $("stMaclar").innerHTML = `<div class="kart lider-bos" style="margin-top: 14px;">Bu ligde yakın tarihte maç yok.</div>`;
+    } else {
+      const gunler = new Map();
+      for (const m of maclar) {
+        const gun = new Date(m.t).toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long" });
+        if (!gunler.has(gun)) gunler.set(gun, []);
+        gunler.get(gun).push(m);
+      }
+      $("stMaclar").innerHTML = [...gunler].map(([gun, liste]) => `
+        <div class="st-gun">${gun}</div>
+        <div class="kart st-liste">${liste.map(stMacSatiri).join("")}</div>`).join("");
+    }
+    stKaydetDurumu();
+  }
+
+  // Kaydedilmeyi bekleyen, geçerli ve öncekinden farklı tahminler
+  function stDegisenler() {
+    const liste = [];
+    for (const [mac, t] of Object.entries(stTaslak)) {
+      const m = FIKSTUR[mac];
+      if (!m || basladi(m) || t.ev === "" || t.dep === "") continue;
+      const ev = +t.ev, dep = +t.dep;
+      if (![ev, dep].every(g => Number.isInteger(g) && g >= 0 && g <= 20)) continue;
+      const b = stBenim[mac];
+      if (b && b.ev === ev && b.dep === dep) continue;
+      liste.push({ mac, lig: m.l, ev, dep, baslama: m.t });
+    }
+    return liste;
+  }
+
+  function stKaydetDurumu() {
+    const n = stDegisenler().length;
+    $("stKaydetBtn").disabled = n === 0;
+    $("stKaydetBtn").textContent = n ? `${n} tahmini kaydet` : "Tahminleri Kaydet";
+  }
+
+  async function stKaydet() {
+    const ad = $("stAd").value.trim(), mesaj = $("stMesaj");
+    if (ad.length < 2) {
+      mesaj.textContent = "Önce takma adını yaz (en az 2 harf)."; mesaj.className = "mesaj yanlis";
+      $("stAd").focus();
+      return;
+    }
+    hafizaYaz("takmaAd", ad);
+    const liste = stDegisenler();
+    if (!liste.length) return;
+    $("stKaydetBtn").disabled = true;
+    mesaj.textContent = "Kaydediliyor…"; mesaj.className = "mesaj";
+    try {
+      const cevap = await fetch(TAHMIN_API, {
+        method: "POST",
+        headers: { apikey: SUPABASE_ANAHTAR, "Content-Type": "application/json", Prefer: "return=minimal" },
+        body: JSON.stringify(liste.map(t => ({ ...t, takma_ad: ad, anahtar: cihazKimligi() }))),
+      });
+      if (!cevap.ok) throw new Error(await cevap.text());
+      const zaman = new Date().toISOString();
+      for (const t of liste) { stBenim[t.mac] = { ev: t.ev, dep: t.dep, olusturma: zaman }; delete stTaslak[t.mac]; }
+      mesaj.textContent = `${liste.length} tahmin kaydedildi ✓`; mesaj.className = "mesaj dogru";
+      stCiz();
+      stTabloYukle();
+    } catch (e) {
+      const hata = String(e.message);
+      mesaj.textContent = hata.includes("hizli") ? "Çok hızlı gönderdin, biraz bekleyip tekrar dene."
+        : hata.includes("basladi") ? "Maçlardan biri başladı, tahmini kapandı. Sayfa yenilendi, tekrar kaydet."
+        : "Kaydedilemedi. İnternet bağlantını kontrol edip tekrar dene.";
+      mesaj.className = "mesaj yanlis";
+      if (hata.includes("basladi")) stCiz(); else stKaydetDurumu();
+    }
+  }
+
+  // ---------- Puan tablosu ----------
+  function haftaBasi() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - (d.getDay() + 6) % 7);   // pazartesi
+    return d.getTime();
+  }
+
+  // Tahmin edilmiş, bitmiş olması gereken ama sonucu elimizde olmayan maçları ESPN'den tamamla
+  async function eksikSonuclariTamamla(macNolari) {
+    const istekler = new Set();
+    for (const no of macNolari) {
+      const m = FIKSTUR[no];
+      if (m && m.s !== "post" && m.s !== "iptal" && Date.now() > Date.parse(m.t) + 2 * SAAT) {
+        istekler.add(m.l + "|" + gunKodu(m.t));
+        istekler.add(m.l + "|" + gunKodu(Date.parse(m.t) - GUN));
+      }
+    }
+    await Promise.allSettled([...istekler].slice(0, 20).map(k => espnGun(...k.split("|"))));
+  }
+
+  let stTabloNo = 0;
+  async function stTabloYukle() {
+    const kapsam = $("stKapsam").value, donem = $("stDonem").value;
+    const no = ++stTabloNo;
+    const bos = yazi => `<tr><td colspan="5" class="lider-bos">${yazi}</td></tr>`;
+    $("stTablo").innerHTML = bos("Yükleniyor…");
+    const bas = haftaBasi(), bitis = bas + 7 * GUN;
+    const p = new URLSearchParams({ select: "oyuncu,takma_ad,mac,ev,dep,olusturma", order: "olusturma.asc,id.asc" });
+    // Haftanın maçlarına en fazla 3 hafta önceden tahmin yapılmış olabilir
+    if (donem === "hafta") p.set("olusturma", "gte." + new Date(bas - 21 * GUN).toISOString());
+    let satirlar;
+    try {
+      if (kapsam !== "herkes") {
+        const lig = await ligGetir(kapsam);
+        if (!lig || !lig.uyeler.length) { if (no === stTabloNo) $("stTablo").innerHTML = bos("Bu ligde henüz kimse yok."); return; }
+        p.set("oyuncu", `in.(${lig.uyeler.join(",")})`);
+      }
+      satirlar = await tumSatirlar(p);
+      await eksikSonuclariTamamla(new Set(satirlar.map(s => s.mac)));
+    } catch (e) {
+      if (no === stTabloNo) $("stTablo").innerHTML = bos("Tablo yüklenemedi. Sayfayı yenilemeyi dene.");
+      return;
+    }
+    if (no !== stTabloNo) return;
+
+    // Her oyuncunun her maç için, maç başlamadan önce yaptığı SON tahmin geçerli
+    const gecerli = new Map(), oyuncular = new Map();
+    for (const s of satirlar) {
+      const o = oyuncular.get(s.oyuncu) || { oyuncu: s.oyuncu, tahmin: 0, tam: 0, puan: 0 };
+      o.ad = s.takma_ad;   // en son kullandığı takma ad
+      oyuncular.set(s.oyuncu, o);
+      const m = FIKSTUR[s.mac];
+      if (m && gecerliTahmin(s, m)) gecerli.set(s.oyuncu + "|" + s.mac, s);
+    }
+    for (const s of gecerli.values()) {
+      const m = FIKSTUR[s.mac], o = oyuncular.get(s.oyuncu);
+      if (donem === "hafta" && !(Date.parse(m.t) >= bas && Date.parse(m.t) < bitis)) continue;
+      if (m.s === "iptal") continue;
+      o.tahmin++;
+      const puan = tahminPuani(s, m);
+      if (puan) o.puan += puan;
+      if (puan === 3) o.tam++;
+    }
+    const liste = [...oyuncular.values()].filter(o => o.tahmin > 0)
+      .sort((a, b) => b.puan - a.puan || b.tam - a.tam || a.ad.localeCompare(b.ad, "tr")).slice(0, 100);
+    if (!liste.length) {
+      $("stTablo").innerHTML = bos(donem === "hafta" ? "Bu hafta henüz tahmin yok. İlk sen ol!" : "Henüz tahmin yok. İlk sen ol!");
+      return;
+    }
+    const benim = await oyuncuKimligi();
+    const madalya = ["🥇", "🥈", "🥉"];
+    $("stTablo").innerHTML = liste.map((o, i) => `
+      <tr class="${o.oyuncu === benim ? "ben" : ""}">
+        <td class="sayi">${i < 3 && o.puan > 0 ? `<span class="madalya">${madalya[i]}</span>` : i + 1}</td>
+        <td>${guvenli(o.ad)}</td>
+        <td class="sayi">${o.tahmin}</td>
+        <td class="sayi">${o.tam}</td>
+        <td class="sayi"><b>${o.puan}</b></td>
+      </tr>`).join("");
+  }
+
+  // ---------- Arkadaş ligleri ----------
+  // Katıldığım liglerin listesi bu cihazda tutulur; üyelik veritabanında
+  const ligleriOku = () => { try { return JSON.parse(hafizaOku("stLigler", "[]")); } catch (e) { return []; } };
+  const ligleriYaz = ligler => hafizaYaz("stLigler", JSON.stringify(ligler));
+  const davetLinki = kod => location.origin + location.pathname + "?katil=" + kod + "#tahmin";
+
+  function supaEkle(tablo, kayit) {
+    return fetch(SUPABASE_URL + "/rest/v1/" + tablo, {
+      method: "POST",
+      headers: { apikey: SUPABASE_ANAHTAR, "Content-Type": "application/json", Prefer: "return=minimal" },
+      body: JSON.stringify(kayit),
+    });
+  }
+
+  async function ligGetir(kod) {
+    const cevap = await fetch(SUPABASE_URL + "/rest/v1/rpc/lig_getir", {
+      method: "POST",
+      headers: { apikey: SUPABASE_ANAHTAR, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_kod: kod }),
+    });
+    if (!cevap.ok) throw new Error(cevap.status);
+    return await cevap.json();   // lig yoksa null
+  }
+
+  async function uyeOl(kod) {
+    const cevap = await supaEkle("lig_uyeleri", { kod, anahtar: cihazKimligi() });
+    if (!cevap.ok && cevap.status !== 409) throw new Error(await cevap.text());   // 409 = zaten üyeyim
+  }
+
+  // Karışmasın diye 0/O ve 1/I harfleri yok
+  function kodUret() {
+    const harfler = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    return [...crypto.getRandomValues(new Uint8Array(6))].map(b => harfler[b % harfler.length]).join("");
+  }
+
+  function stLiglerimCiz() {
+    const ligler = ligleriOku(), secili = $("stKapsam").value;
+    $("stKapsam").innerHTML = `<option value="herkes">🌍 Herkes</option>`
+      + ligler.map(l => `<option value="${l.kod}">👥 ${guvenli(l.ad)}</option>`).join("");
+    $("stKapsam").value = ligler.some(l => l.kod === secili) ? secili : "herkes";
+    $("stLiglerim").innerHTML = ligler.length
+      ? ligler.map(l => {
+          const metin = `Saha Kenarı'nda "${l.ad}" skor tahmin ligime katıl! Kod: ${l.kod}\n${davetLinki(l.kod)}`;
+          return `<div class="st-lig">
+            <b>${guvenli(l.ad)}</b><code>${l.kod}</code><span class="bosluk"></span>
+            <a class="dugme" href="https://wa.me/?text=${encodeURIComponent(metin)}" target="_blank" rel="noopener">WhatsApp'ta davet et</a>
+            <button class="ikincil" data-cik="${l.kod}">Listemden çıkar</button>
+          </div>`;
+        }).join("")
+      : `<p class="ipucu-yazi" style="margin: 0;">Henüz bir ligin yok. Yeni bir lig kur ya da arkadaşının kodunu gir.</p>`;
+  }
+
+  function ligMesaji(yazi, tur) { $("stLigMesaj").textContent = yazi; $("stLigMesaj").className = "mesaj " + (tur || ""); }
+
+  function ligeEklendi(kod, ad) {
+    const ligler = ligleriOku().filter(l => l.kod !== kod);
+    ligler.push({ kod, ad });
+    ligleriYaz(ligler);
+    stLiglerimCiz();
+    $("stKapsam").value = kod;
+    stTabloYukle();
+  }
+
+  async function stLigKur() {
+    const ad = $("stYeniLig").value.trim();
+    if (ad.length < 2) { ligMesaji("Lig adı en az 2 harf olmalı.", "yanlis"); return; }
+    $("stKurBtn").disabled = true;
+    ligMesaji("Lig kuruluyor…");
+    try {
+      let kod = null;
+      for (let deneme = 0; deneme < 3 && !kod; deneme++) {   // aynı kod denk gelirse yenisini dene
+        const aday = kodUret();
+        const cevap = await supaEkle("ozel_ligler", { kod: aday, ad, anahtar: cihazKimligi() });
+        if (cevap.ok) kod = aday;
+        else if (cevap.status !== 409) throw new Error(await cevap.text());
+      }
+      if (!kod) throw new Error("kod");
+      await uyeOl(kod);
+      $("stYeniLig").value = "";
+      ligeEklendi(kod, ad);
+      ligMesaji(`"${ad}" kuruldu! Kodu: ${kod}. Arkadaşlarına davet linkini gönder.`, "dogru");
+    } catch (e) {
+      ligMesaji(String(e.message).includes("fazla") ? "Bugün en fazla 5 lig kurabilirsin." : "Lig kurulamadı. Tekrar dene.", "yanlis");
+    }
+    $("stKurBtn").disabled = false;
+  }
+
+  async function stLigKatil() {
+    const kod = $("stKatilKod").value.trim().toUpperCase();
+    if (!/^[A-Z2-9]{6}$/.test(kod)) { ligMesaji("Kod 6 haneli olmalı (harf ve rakam).", "yanlis"); return; }
+    $("stKatilBtn").disabled = true;
+    ligMesaji("Katılınıyor…");
+    try {
+      const lig = await ligGetir(kod);
+      if (!lig) ligMesaji("Bu kodla bir lig bulunamadı. Kodu kontrol et.", "yanlis");
+      else {
+        await uyeOl(kod);
+        $("stKatilKod").value = "";
+        ligeEklendi(kod, lig.ad);
+        ligMesaji(`"${lig.ad}" ligine katıldın! Tahminlerin bu ligin tablosunda da sayılacak.`, "dogru");
+      }
+    } catch (e) {
+      ligMesaji("Katılınamadı. Tekrar dene.", "yanlis");
+    }
+    $("stKatilBtn").disabled = false;
+  }
+
+  // ---------- Açılış ve olaylar ----------
+  function stBaslat() {
+    const ligSecenekleri = VERI.ligler.map(l => `<option value="${l.kod}">${BAYRAK_EMOJI[l.kod] || ""} ${l.ad}</option>`).join("");
+    $("stLigSec").innerHTML = ligSecenekleri;
+    stLig = ligBul(stLig).kod;
+    $("stLigSec").value = stLig;
+    $("stAd").value = hafizaOku("takmaAd", "");
+    stLiglerimCiz();
+    // Davet linkiyle gelindiyse kodu kutuya yaz
+    const davet = new URLSearchParams(location.search).get("katil");
+    if (davet && !ligleriOku().some(l => l.kod === davet.toUpperCase())) {
+      $("stKatilKod").value = davet.toUpperCase().slice(0, 6);
+      ligMesaji("Davet kodu yazıldı. Katılmak için \"Katıl\"a bas.");
+    }
+  }
+
+  async function stGoster() {
+    if (!stBenimYuklendi) {
+      stCiz();
+      try { await stBenimYukle(); } catch (e) {}
+      if (!stYaziyor()) stCiz();
+    }
+    if (Date.now() - stCanliZaman > 2 * 60000) stCanliTazele();
+    stTabloYukle();
+  }
+
+  $("stLigSec").addEventListener("change", () => {
+    stLig = $("stLigSec").value;
+    hafizaYaz("stLig", stLig);
+    stCiz();
+    stCanliTazele();
+  });
+  $("stMaclar").addEventListener("input", e => {
+    const kutu = e.target.closest("input[data-mac]");
+    if (!kutu) return;
+    const mac = kutu.dataset.mac, satir = kutu.closest(".mac-skor");
+    stTaslak[mac] = { ev: satir.querySelector('[data-yan="ev"]').value, dep: satir.querySelector('[data-yan="dep"]').value };
+    stKaydetDurumu();
+    $("stMesaj").textContent = "";
+  });
+  $("stKaydetBtn").addEventListener("click", stKaydet);
+  $("stAd").addEventListener("change", () => { if ($("stAd").value.trim().length >= 2) hafizaYaz("takmaAd", $("stAd").value.trim()); });
+  for (const id of ["stKapsam", "stDonem"]) $(id).addEventListener("change", stTabloYukle);
+  $("stKurBtn").addEventListener("click", stLigKur);
+  $("stKatilBtn").addEventListener("click", stLigKatil);
+  $("stYeniLig").addEventListener("keydown", e => { if (e.key === "Enter") stLigKur(); });
+  $("stKatilKod").addEventListener("keydown", e => { if (e.key === "Enter") stLigKatil(); });
+  $("stLiglerim").addEventListener("click", e => {
+    const kod = e.target.dataset?.cik;
+    if (!kod) return;
+    ligleriYaz(ligleriOku().filter(l => l.kod !== kod));
+    stLiglerimCiz();
+    stTabloYukle();
+  });
+
+  // Sekme açıkken her dakika: maç saati gelenleri kilitle, canlı maç varsa skorları tazele
+  setInterval(() => {
+    if (!VERI || $("bolumTahmin").hidden || document.hidden) return;
+    const canliVar = Object.values(FIKSTUR).some(m => m.l === stLig && basladi(m)
+      && m.s !== "post" && m.s !== "iptal" && Date.now() < Date.parse(m.t) + 3 * SAAT);
+    if (canliVar && Date.now() - stCanliZaman > 2 * 60000) stCanliTazele();
+    else if (!stYaziyor()) stCiz();
+  }, 60000);
+
+  // ============================================================
   // AÇILIŞ: verileri yükle
   // ============================================================
   sekmeGoster();
@@ -1730,7 +2265,10 @@
       syBaslangicYazilari();
       gbBaslat();
       btBaslangicYazilari();
+      try { FIKSTUR = (await (await fetch("fikstur.json")).json()).maclar || {}; } catch (e) {}
+      stBaslat();
       if (location.hash === "#liderlik") ldYukle();
+      if (location.hash === "#tahmin") stGoster();
     } catch (e) {
       $("guncelleme").textContent = "";
       $("hata").hidden = false;
@@ -1741,6 +2279,7 @@
     try {
       GORSEL = await (await fetch("gorseller.json")).json();
       ligDegisti();
+      if (!$("bolumTahmin").hidden && !stYaziyor()) stCiz();
     } catch (e) {}
   })();
 </script>

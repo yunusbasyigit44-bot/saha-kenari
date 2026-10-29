@@ -57,12 +57,19 @@ jobs:
         shell: pwsh
         run: ./01_FUTBOL/paylasim/veri_guncelle.ps1
 
+      # Skor Tahmini için maç fikstürü ve sonuçları; başarısız olursa site yine yayınlanır
+      - name: ESPN'den fikstürü indir
+        if: github.event_name != 'push'
+        continue-on-error: true
+        shell: pwsh
+        run: ./01_FUTBOL/paylasim/fikstur_guncelle.ps1
+
       - name: Değişiklik varsa kaydet ve yükle
         if: github.event_name != 'push'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add 01_FUTBOL/paylasim/data.json 01_FUTBOL/paylasim/gorseller.json
+          git add 01_FUTBOL/paylasim/data.json 01_FUTBOL/paylasim/gorseller.json 01_FUTBOL/paylasim/fikstur.json
           if git diff --cached --quiet; then
             echo "Veride değişiklik yok."
           else
@@ -74,7 +81,7 @@ jobs:
       - name: Site dosyalarını hazırla
         run: |
           mkdir -p _site
-          cp 01_FUTBOL/paylasim/data.json 01_FUTBOL/paylasim/gorseller.json _site/
+          cp 01_FUTBOL/paylasim/data.json 01_FUTBOL/paylasim/gorseller.json 01_FUTBOL/paylasim/fikstur.json _site/
           {
             echo '<!doctype html><html lang="tr"><head><meta charset="utf-8">'
             echo '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'

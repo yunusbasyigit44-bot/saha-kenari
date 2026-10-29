@@ -4,8 +4,14 @@
     {
       "name": "futbol",
       "runtimeExecutable": "powershell",
-      "runtimeArgs": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "01_FUTBOL\\sunucu.ps1", "-TarayiciAcma"],
+      "runtimeArgs": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "01_FUTBOL\sunucu.ps1", "-TarayiciAcma"],
       "port": 8765
+    },
+    {
+      "name": "saha-kenari",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "01_FUTBOL/paylasim/onizleme.ps1"],
+      "port": 8766
     }
   ]
 }

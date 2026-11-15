@@ -7,8 +7,6 @@ Bu dosya klasörün "pano"sudur (5S - Seiketsu). Her yeni proje buraya bir satı
 | No | Klasör | Ne işe yarar | Nasıl açılır |
 |----|--------|--------------|--------------|
 | 01 | `01_FUTBOL/` | Canlı (ESPN) futbol istatistikleri + "İpucu Avı" oyunu | `01_FUTBOL/BASLAT.bat` dosyasına çift tıkla |
-| 01 | `01_FUTBOL/paylasim/` | Herkese açık site "Saha Kenarı" — her sabah 07:00'de GitHub otomatik günceller | https://yunusbasyigit44-bot.github.io/saha-kenari/ |
-| 01 | `01_FUTBOL/paylasim/` (Skor Tahmini) | Maç skoru tahmin oyunu + arkadaş ligleri. Fikstür: `fikstur_guncelle.ps1` → `fikstur.json`. Tablolar: `supabase_kurulum.sql` EK 2 | Sitede "Skor Tahmini" sekmesi · bilgisayarda önizleme: `onizleme.ps1` → http://localhost:8766 |
 
 ## Klasör kuralları (5S)
 
@@ -21,4 +19,5 @@ Bu dosya klasörün "pano"sudur (5S - Seiketsu). Her yeni proje buraya bir satı
 ## Arşivler
 
 - `_ARSIV/` — tamamen bırakılan projeler buraya taşınır.
+- `01_FUTBOL/_arsiv/paylasim/` — "Saha Kenarı" sitesi + Skor Tahmini (2026-11-15'te bırakıldı; günlük GitHub güncellemesi `veri-guncelle.yml` de burada, artık çalışmıyor).
 - `01_FUTBOL/_arsiv/galatasaray.html` — ilk sabit verili Galatasaray sayfası (yerini canlı `futbol.html` aldı).
